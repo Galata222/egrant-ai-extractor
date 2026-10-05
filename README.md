@@ -81,4 +81,4 @@ Confirming in the iframe posts `{ type: "egrant:fill", payload }`. In production
 
 `GET /health` → `{ "status": "ok" }`
 
-`POST /extract` with `multipart/form-data` field `file`. PDF, JPG, or PNG, up to 10 MB. The response is the tag tree, `needs_review`, and `page_preview` (a PNG data URL of the first page, used by the review screen).
+`POST /extract` with `multipart/form-data` field `file`. PDF, JPG, or PNG, up to 10 MB. The response is the tag tree, `document_kind`, `needs_review`, and `page_preview` (a PNG data URL of the first page, used by the review screen).
