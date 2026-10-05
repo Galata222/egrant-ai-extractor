@@ -1,0 +1,27 @@
+# Python
+backend/venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+*.egg-info/
+.venv/
+
+# Model caches and uploads
+backend/models/
+backend/uploads/
+**/.EasyOCR/
+
+# Node
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# Env
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,108 @@
+{
+  "version": "egrant-fill.v1",
+  "root_id": "vyuctovanie",
+  "profiles": {
+    "invoice": {
+      "sections": [
+        {
+          "id": "dodavatel",
+          "title": "Dodávateľ",
+          "item_id": "dodavatel",
+          "fields": [
+            {"key": "supplier_name", "tag": "dodavatel.nazov", "label": "Názov dodávateľa", "required": true},
+            {"key": "ico", "tag": "dodavatel.ico", "label": "IČO dodávateľa", "required": true},
+            {"key": "dic", "tag": "dodavatel.dic", "label": "DIČ dodávateľa", "required": true}
+          ]
+        },
+        {
+          "id": "faktura",
+          "title": "Faktúra",
+          "item_id": "faktura",
+          "fields": [
+            {"key": "invoice_number", "tag": "faktura.cislo", "label": "Číslo faktúry", "required": true},
+            {"key": "issue_date", "tag": "faktura.datum_vystavenia", "label": "Dátum vystavenia", "required": true},
+            {"key": "due_date", "tag": "faktura.datum_splatnosti", "label": "Dátum splatnosti", "required": true},
+            {"key": "total_net", "tag": "faktura.suma_bez_dph", "label": "Suma bez DPH", "required": true},
+            {"key": "total_gross", "tag": "faktura.suma_s_dph", "label": "Suma s DPH", "required": true}
+          ]
+        }
+      ],
+      "line_items": {
+        "section_id": "polozky",
+        "section_title": "Položky dokladu",
+        "string_tag": "TABLE_ITEM_STRING",
+        "currency_tag": "TABLE_ITEM_CURRENCY",
+        "string_label": "Názov položky",
+        "currency_label": "Suma položky"
+      }
+    },
+    "receipt": {
+      "sections": [
+        {
+          "id": "dodavatel",
+          "title": "Dodávateľ",
+          "item_id": "dodavatel",
+          "fields": [
+            {"key": "supplier_name", "tag": "dodavatel.nazov", "label": "Názov dodávateľa", "required": true},
+            {"key": "ico", "tag": "dodavatel.ico", "label": "IČO dodávateľa", "required": true},
+            {"key": "dic", "tag": "dodavatel.dic", "label": "DIČ dodávateľa", "required": false}
+          ]
+        },
+        {
+          "id": "doklad",
+          "title": "Bloček",
+          "item_id": "doklad",
+          "fields": [
+            {"key": "invoice_number", "tag": "faktura.cislo", "label": "Číslo dokladu", "required": true},
+            {"key": "issue_date", "tag": "faktura.datum_vystavenia", "label": "Dátum vystavenia", "required": true},
+            {"key": "due_date", "tag": "faktura.datum_splatnosti", "label": "Dátum splatnosti", "required": false},
+            {"key": "total_net", "tag": "faktura.suma_bez_dph", "label": "Suma bez DPH", "required": false},
+            {"key": "total_gross", "tag": "faktura.suma_s_dph", "label": "Suma s DPH", "required": true}
+          ]
+        }
+      ],
+      "line_items": {
+        "section_id": "polozky",
+        "section_title": "Položky dokladu",
+        "string_tag": "TABLE_ITEM_STRING",
+        "currency_tag": "TABLE_ITEM_CURRENCY",
+        "string_label": "Názov položky",
+        "currency_label": "Suma položky"
+      }
+    },
+    "contract": {
+      "sections": [
+        {
+          "id": "dodavatel",
+          "title": "Zmluvná strana",
+          "item_id": "dodavatel",
+          "fields": [
+            {"key": "supplier_name", "tag": "dodavatel.nazov", "label": "Názov zmluvnej strany", "required": true},
+            {"key": "ico", "tag": "dodavatel.ico", "label": "IČO dodávateľa", "required": true},
+            {"key": "dic", "tag": "dodavatel.dic", "label": "DIČ dodávateľa", "required": false}
+          ]
+        },
+        {
+          "id": "zmluva",
+          "title": "Zmluva",
+          "item_id": "zmluva",
+          "fields": [
+            {"key": "contract_number", "tag": "zmluva.cislo", "label": "Číslo zmluvy", "required": true},
+            {"key": "signed_date", "tag": "zmluva.datum_uzavretia", "label": "Dátum uzavretia", "required": true},
+            {"key": "effective_date", "tag": "zmluva.datum_ucinnosti", "label": "Dátum účinnosti", "required": false},
+            {"key": "subject", "tag": "zmluva.predmet", "label": "Predmet zmluvy", "required": true},
+            {"key": "contract_value", "tag": "zmluva.cena", "label": "Zmluvná cena", "required": true}
+          ]
+        }
+      ],
+      "line_items": {
+        "section_id": "polozky",
+        "section_title": "Položky dokladu",
+        "string_tag": "TABLE_ITEM_STRING",
+        "currency_tag": "TABLE_ITEM_CURRENCY",
+        "string_label": "Názov položky",
+        "currency_label": "Suma položky"
+      }
+    }
+  }
+}
