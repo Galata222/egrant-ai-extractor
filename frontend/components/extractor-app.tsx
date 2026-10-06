@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { MappingPanel } from "@/components/mapping-panel";
 import { UploadPanel } from "@/components/upload-panel";
 import { VerificationDesk } from "@/components/verification-desk";
 import { extractFile, validateFile } from "@/lib/api";
@@ -28,6 +29,8 @@ export function ExtractorApp({ embed }: { embed: boolean }) {
   const [copied, setCopied] = useState(false);
   const [posted, setPosted] = useState(false);
   const [mapping, setMapping] = useState<StoredMapping>(EMPTY_MAPPING);
+  const [mappingOpen, setMappingOpen] = useState(false);
+  const [staged, setStaged] = useState<File | null>(null);
 
   useEffect(() => {
     setMapping(loadMapping());
@@ -45,6 +48,19 @@ export function ExtractorApp({ embed }: { embed: boolean }) {
     previewUrlRef.current = url;
     setFile(next);
     setPreviewUrl(url);
+  }
+
+  function stage(next: File) {
+    const problem = validateFile(next);
+    if (problem) {
+      setError(copy.errors[problem] ?? copy.errors.extract_failed);
+      setStaged(null);
+      setPhase("upload");
+      return;
+    }
+    setError(null);
+    setStaged(next);
+    setPhase("upload");
   }
 
   async function submit(next: File) {
@@ -80,7 +96,7 @@ export function ExtractorApp({ embed }: { embed: boolean }) {
       const response = await fetch("/samples/sample-invoice.pdf");
       if (!response.ok) throw new Error("sample_failed");
       const blob = await response.blob();
-      await submit(new File([blob], "sample-invoice.pdf", { type: "application/pdf" }));
+      stage(new File([blob], "sample-invoice.pdf", { type: "application/pdf" }));
     } catch (reason) {
       setError(reason instanceof Error ? (copy.errors[reason.message] ?? reason.message) : copy.errors.sample_failed);
       setPhase("upload");
@@ -98,6 +114,7 @@ export function ExtractorApp({ embed }: { embed: boolean }) {
     setCopied(false);
     setPosted(false);
     setError(null);
+    setStaged(null);
   }
 
   function confirm() {
@@ -133,26 +150,39 @@ export function ExtractorApp({ embed }: { embed: boolean }) {
     URL.revokeObjectURL(url);
   }
 
-  if (phase === "upload" || phase === "loading") {
-    return (
-      <UploadPanel
-        error={error}
-        loading={phase === "loading"}
-        mapping={mapping}
-        onMapping={(next) => {
-          setMapping(next);
-          saveMapping(next);
-        }}
-        onFile={submit}
-        onSample={loadSample}
-      />
-    );
-  }
+  const updateMapping = (next: StoredMapping) => {
+    setMapping(next);
+    saveMapping(next);
+  };
 
   return (
-    <div className="flex min-h-dvh flex-col bg-canvas text-ink">
-      <SiteHeader embed={embed} />
+    <div className="flex min-h-dvh flex-col bg-canvas pt-[4.75rem] text-ink">
+      <SiteHeader
+        mappingOpen={mappingOpen}
+        onToggleMapping={() => setMappingOpen((open) => !open)}
+        onSample={loadSample}
+      />
+      {phase === "upload" || phase === "loading" ? (
+        <UploadPanel
+          error={error}
+          loading={phase === "loading"}
+          mapping={mapping}
+          mappingOpen={mappingOpen}
+          staged={staged}
+          onMapping={updateMapping}
+          onStage={stage}
+          onClear={() => setStaged(null)}
+          onContinue={() => {
+            if (staged) void submit(staged);
+          }}
+        />
+      ) : (
       <main className="flex-1">
+        {mappingOpen ? (
+          <div className="mx-auto w-full max-w-3xl px-5 pt-8">
+            <MappingPanel value={mapping} onChange={updateMapping} />
+          </div>
+        ) : null}
         {phase === "review" && file && previewUrl && tree ? (
           <VerificationDesk
             file={file}
@@ -183,6 +213,7 @@ export function ExtractorApp({ embed }: { embed: boolean }) {
           />
         ) : null}
       </main>
+      )}
     </div>
   );
 }

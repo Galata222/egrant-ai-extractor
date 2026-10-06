@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 
 type SelectedFile = {
   file: File;
@@ -31,9 +31,20 @@ const FileUpload = ({
   className = "",
 }: FileUploadProps) => {
   const [files, setFiles] = useState<SelectedFile[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const filesRef = useRef(files);
+  filesRef.current = files;
+
+  useEffect(() => {
+    return () => {
+      filesRef.current.forEach((item) => {
+        if (item.preview) URL.revokeObjectURL(item.preview);
+      });
+    };
+  }, []);
 
   const validateFile = (file: File) => {
     const fileErrors: string[] = [];
@@ -67,7 +78,7 @@ const FileUpload = ({
             name: file.name,
             size: file.size,
             type: file.type,
-            preview: file.type.startsWith("image/") ? URL.createObjectURL(file) : null,
+            preview: previewUrlFor(file),
           });
         } else {
           fileErrors.push(`${file.name}: ${fileValidationErrors.join(", ")}`);
@@ -75,11 +86,17 @@ const FileUpload = ({
       });
 
       if (!multiple) {
-        setFiles(validFiles.slice(0, 1));
-        onFilesSelect(validFiles.slice(0, 1));
+        files.forEach((item) => {
+          if (item.preview) URL.revokeObjectURL(item.preview);
+        });
+        const next = validFiles.slice(0, 1);
+        setFiles(next);
+        setActiveId(next[0]?.id ?? null);
+        onFilesSelect(next);
       } else {
         const updatedFiles = [...files, ...validFiles];
         setFiles(updatedFiles);
+        setActiveId((current) => current ?? validFiles[0]?.id ?? null);
         onFilesSelect(updatedFiles);
       }
 
@@ -128,6 +145,7 @@ const FileUpload = ({
   const removeFile = (fileId: string) => {
     const updatedFiles = files.filter((file) => file.id !== fileId);
     setFiles(updatedFiles);
+    setActiveId((current) => (current === fileId ? (updatedFiles[0]?.id ?? null) : current));
     onFilesRemove(updatedFiles);
 
     const fileToRemove = files.find((file) => file.id === fileId);
@@ -207,10 +225,25 @@ const FileUpload = ({
           <h4 className="text-sm font-medium text-foreground">Selected files ({files.length})</h4>
           <div className="space-y-2">
             {files.map((file) => (
-              <div key={file.id} className="flex items-center gap-3 p-3 rounded-md border bg-muted/20">
-                <div className="text-lg">{getFileIcon(file.type)}</div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{file.name}</p>
+              <div
+                key={file.id}
+                className={`flex items-center gap-3 rounded-md border bg-muted/20 p-3 ${
+                  file.id === activeId ? "border-ring" : ""
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setActiveId(file.id);
+                  }}
+                  className="shrink-0"
+                  aria-label={`Preview ${file.name}`}
+                >
+                  <FileThumb file={file} icon={getFileIcon(file.type)} />
+                </button>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-foreground">{file.name}</p>
                   <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
                 </div>
                 <button
@@ -228,11 +261,67 @@ const FileUpload = ({
               </div>
             ))}
           </div>
+          <FilePreview file={files.find((item) => item.id === activeId) ?? files[0]} iconFor={getFileIcon} />
         </div>
       )}
     </div>
   );
 };
+
+function previewUrlFor(file: File) {
+  if (
+    file.type.startsWith("image/") ||
+    file.type.startsWith("video/") ||
+    file.type.startsWith("audio/") ||
+    file.type === "application/pdf" ||
+    file.name.toLowerCase().endsWith(".pdf")
+  ) {
+    return URL.createObjectURL(file);
+  }
+  return null;
+}
+
+function FileThumb({ file, icon }: { file: SelectedFile; icon: string }) {
+  if (file.preview && file.type.startsWith("image/")) {
+    return <img src={file.preview} alt="" className="h-14 w-14 rounded-md object-cover" />;
+  }
+  if (file.preview && file.type.startsWith("video/")) {
+    return <video src={file.preview} muted className="h-14 w-14 rounded-md object-cover" />;
+  }
+  return (
+    <span className="flex h-14 w-14 items-center justify-center rounded-md border bg-background text-lg">{icon}</span>
+  );
+}
+
+function FilePreview({ file, iconFor }: { file: SelectedFile; iconFor: (type: string) => string }) {
+  const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+
+  return (
+    <div className="overflow-hidden rounded-md border bg-background">
+      <p className="border-b px-3 py-2 text-xs text-muted-foreground">Preview</p>
+      {file.preview && file.type.startsWith("image/") ? (
+        <img src={file.preview} alt={file.name} className="max-h-80 w-full object-contain" />
+      ) : null}
+      {file.preview && file.type.startsWith("video/") ? (
+        <video src={file.preview} controls className="max-h-80 w-full" />
+      ) : null}
+      {file.preview && file.type.startsWith("audio/") ? (
+        <div className="p-4">
+          <audio src={file.preview} controls className="w-full" />
+        </div>
+      ) : null}
+      {file.preview && isPdf ? (
+        <iframe title={file.name} src={file.preview} className="h-80 w-full bg-white" />
+      ) : null}
+      {!file.preview ? (
+        <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
+          <span className="text-3xl">{iconFor(file.type)}</span>
+          <p className="text-sm text-muted-foreground">No preview for this file type</p>
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 const FileUploadDemo = () => {
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
@@ -262,9 +351,9 @@ const FileUploadDemo = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
+    <div className="file-upload-demo min-h-screen bg-background text-foreground transition-colors duration-300">
       <style>{`
-        :root {
+        .file-upload-demo {
           --background: 0 0% 100%;
           --foreground: 222.2 84% 4.9%;
           --card: 0 0% 100%;
@@ -287,7 +376,7 @@ const FileUploadDemo = () => {
           --radius: 0.5rem;
         }
 
-        .dark {
+        .dark .file-upload-demo {
           --background: 222.2 84% 4.9%;
           --foreground: 210 40% 98%;
           --card: 222.2 84% 4.9%;
@@ -309,36 +398,27 @@ const FileUploadDemo = () => {
           --ring: 212.7 26.8% 83.9%;
         }
 
-        * {
-          border-color: hsl(var(--border));
-        }
-
-        body {
-          background-color: hsl(var(--background));
-          color: hsl(var(--foreground));
-        }
-
-        .bg-background { background-color: hsl(var(--background)); }
-        .text-foreground { color: hsl(var(--foreground)); }
-        .bg-card { background-color: hsl(var(--card)); }
-        .text-card-foreground { color: hsl(var(--card-foreground)); }
-        .bg-muted { background-color: hsl(var(--muted)); }
-        .text-muted-foreground { color: hsl(var(--muted-foreground)); }
-        .bg-secondary { background-color: hsl(var(--secondary)); }
-        .text-secondary-foreground { color: hsl(var(--secondary-foreground)); }
-        .border-input { border-color: hsl(var(--input)); }
-        .border-border { border-color: hsl(var(--border)); }
-        .border-ring { border-color: hsl(var(--ring)); }
-        .border-destructive { border-color: hsl(var(--destructive)); }
-        .text-destructive { color: hsl(var(--destructive)); }
-        .bg-muted\\/20 { background-color: hsl(var(--muted) / 0.2); }
-        .bg-muted\\/50 { background-color: hsl(var(--muted) / 0.5); }
-        .hover\\:bg-muted\\/20:hover { background-color: hsl(var(--muted) / 0.2); }
-        .hover\\:text-destructive:hover { color: hsl(var(--destructive)); }
-        .hover\\:border-border:hover { border-color: hsl(var(--border)); }
-        .hover\\:bg-accent:hover { background-color: hsl(var(--accent)); }
-        .hover\\:text-accent-foreground:hover { color: hsl(var(--accent-foreground)); }
-        .hover\\:bg-secondary\\/80:hover { background-color: hsl(var(--secondary) / 0.8); }
+        .file-upload-demo .bg-background { background-color: hsl(var(--background)); }
+        .file-upload-demo .text-foreground { color: hsl(var(--foreground)); }
+        .file-upload-demo .bg-card { background-color: hsl(var(--card)); }
+        .file-upload-demo .text-card-foreground { color: hsl(var(--card-foreground)); }
+        .file-upload-demo .bg-muted { background-color: hsl(var(--muted)); }
+        .file-upload-demo .text-muted-foreground { color: hsl(var(--muted-foreground)); }
+        .file-upload-demo .bg-secondary { background-color: hsl(var(--secondary)); }
+        .file-upload-demo .text-secondary-foreground { color: hsl(var(--secondary-foreground)); }
+        .file-upload-demo .border-input { border-color: hsl(var(--input)); }
+        .file-upload-demo .border-border { border-color: hsl(var(--border)); }
+        .file-upload-demo .border-ring { border-color: hsl(var(--ring)); }
+        .file-upload-demo .border-destructive { border-color: hsl(var(--destructive)); }
+        .file-upload-demo .text-destructive { color: hsl(var(--destructive)); }
+        .file-upload-demo .bg-muted\\/20 { background-color: hsl(var(--muted) / 0.2); }
+        .file-upload-demo .bg-muted\\/50 { background-color: hsl(var(--muted) / 0.5); }
+        .file-upload-demo .hover\\:bg-muted\\/20:hover { background-color: hsl(var(--muted) / 0.2); }
+        .file-upload-demo .hover\\:text-destructive:hover { color: hsl(var(--destructive)); }
+        .file-upload-demo .hover\\:border-border:hover { border-color: hsl(var(--border)); }
+        .file-upload-demo .hover\\:bg-accent:hover { background-color: hsl(var(--accent)); }
+        .file-upload-demo .hover\\:text-accent-foreground:hover { color: hsl(var(--accent-foreground)); }
+        .file-upload-demo .hover\\:bg-secondary\\/80:hover { background-color: hsl(var(--secondary) / 0.8); }
       `}</style>
 
       <div className="flex items-center justify-center min-h-screen p-4">

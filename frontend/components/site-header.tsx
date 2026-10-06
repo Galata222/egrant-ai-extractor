@@ -1,61 +1,65 @@
 "use client";
 
+import Link from "next/link";
 import { LanguageSwitch, useCopy } from "@/lib/locale";
 import { useTheme } from "@/lib/theme";
 
 type SiteHeaderProps = {
-  embed?: boolean;
   mappingOpen?: boolean;
   onToggleMapping?: () => void;
   onSample?: () => void;
 };
 
-export function SiteHeader({ embed = false, mappingOpen = false, onToggleMapping, onSample }: SiteHeaderProps) {
+const outlineButton =
+  "inline-flex h-9 shrink-0 items-center rounded-full border border-line bg-card px-3.5 text-[13px] font-medium transition duration-200 hover:bg-soft";
+const solidButton =
+  "inline-flex h-9 shrink-0 items-center rounded-full bg-ink px-4 text-[13px] font-medium text-canvas transition duration-200 hover:opacity-85";
+
+export function SiteHeader({ mappingOpen = false, onToggleMapping, onSample }: SiteHeaderProps) {
   const copy = useCopy();
   const { theme, setTheme } = useTheme();
   const dark = theme === "dark";
 
   return (
-    <header className="sticky top-0 z-20 px-4 pt-4">
-      <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-3 rounded-full border border-line bg-card/90 px-3 py-2 backdrop-blur-md sm:px-4">
-        <div className="flex min-w-0 items-center gap-3">
+    <header className="fixed inset-x-0 top-0 z-30 bg-canvas/85 px-4 py-3 backdrop-blur-md">
+      <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 rounded-full border border-line bg-card px-3 sm:px-4">
+        <Link href="/" className="flex min-w-0 items-center gap-3">
           <Mark />
-          <div className="min-w-0">
-            <p className="display text-[17px] leading-none tracking-[-0.04em]">{copy.brand}</p>
-            {embed ? null : <p className="mt-1 truncate text-[11px] text-muted">{copy.navTagline}</p>}
-          </div>
-        </div>
-        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <span className="min-w-0">
+            <span className="display block text-[17px] leading-none tracking-[-0.04em]">{copy.brand}</span>
+            <span className="mt-1 hidden truncate text-[11px] text-muted sm:block">{copy.navTagline}</span>
+          </span>
+        </Link>
+        <nav className="ml-auto flex shrink-0 items-center gap-2">
           {onToggleMapping ? (
-            <button
-              type="button"
-              aria-expanded={mappingOpen}
-              onClick={onToggleMapping}
-              className="h-9 rounded-full border border-line bg-card px-3.5 text-[13px] font-medium transition duration-200 hover:bg-soft"
-            >
+            <button type="button" aria-expanded={mappingOpen} onClick={onToggleMapping} className={outlineButton}>
               {copy.mappingTitle}
             </button>
-          ) : null}
+          ) : (
+            <Link href="/" className={outlineButton}>
+              {copy.mappingTitle}
+            </Link>
+          )}
           {onSample ? (
-            <button
-              type="button"
-              onClick={onSample}
-              className="h-9 rounded-full bg-ink px-4 text-[13px] font-medium text-canvas transition duration-200 hover:opacity-85"
-            >
+            <button type="button" onClick={onSample} className={solidButton}>
               {copy.sampleShort}
             </button>
-          ) : null}
+          ) : (
+            <Link href="/" className={solidButton}>
+              {copy.sampleShort}
+            </Link>
+          )}
           <LanguageSwitch />
           <button
             type="button"
             aria-pressed={dark}
             aria-label={dark ? copy.themeLight : copy.themeDark}
             onClick={() => setTheme(dark ? "light" : "dark")}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-card transition duration-200 hover:bg-soft"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-line bg-card transition duration-200 hover:bg-soft"
           >
             {dark ? <SunIcon /> : <MoonIcon />}
           </button>
-        </div>
+        </nav>
       </div>
     </header>
   );

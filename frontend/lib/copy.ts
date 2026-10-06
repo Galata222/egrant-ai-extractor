@@ -32,6 +32,10 @@ type Copy = {
   themeDark: string;
   themeLight: string;
   browse: string;
+  readFirst: string;
+  continueProcess: string;
+  chooseAnother: string;
+  noSheetPreview: string;
   orWord: string;
   encrypted: string;
   stepUpload: string;
@@ -164,6 +168,10 @@ const dictionaries: Record<Lang, Copy> = {
     themeDark: "Tmavý režim",
     themeLight: "Svetlý režim",
     browse: "Prehliadať",
+    readFirst: "Prečítajte doklad. Spracovanie začne až po pokračovaní.",
+    continueProcess: "Pokračovať",
+    chooseAnother: "Vybrať iný súbor",
+    noSheetPreview: "Tabuľku nie je možné zobraziť vopred. Pokračujte, ak má byť spracovaná.",
     orWord: "ALEBO",
     encrypted: "Šifrované od konca po koniec",
     stepUpload: "Krok 1 z 2",
@@ -257,6 +265,10 @@ const dictionaries: Record<Lang, Copy> = {
     themeDark: "Dark mode",
     themeLight: "Light mode",
     browse: "Browse",
+    readFirst: "Read the document. Processing starts only after you continue.",
+    continueProcess: "Continue",
+    chooseAnother: "Choose another file",
+    noSheetPreview: "This spreadsheet cannot be shown in advance. Continue when it should be processed.",
     orWord: "OR",
     encrypted: "End-to-end encrypted",
     stepUpload: "Step 1 of 2",
