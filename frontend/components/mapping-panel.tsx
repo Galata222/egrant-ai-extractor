@@ -19,9 +19,9 @@ export function MappingPanel({ value, onChange }: MappingPanelProps) {
     (Object.values(value.fields).some(Boolean) || Object.values(value.lines).some(Boolean));
 
   return (
-    <section className="rounded-xl border border-[#d6d3d1] bg-white p-4">
-      <h2 className="text-lg font-semibold">{copy.mappingTitle}</h2>
-      <p className="mt-1 text-[#44403c]">{copy.mappingHint}</p>
+    <section className="rounded-[24px] border border-line bg-card p-5">
+      <h2 className="display text-2xl">{copy.mappingTitle}</h2>
+      <p className="mt-1 text-muted">{copy.mappingHint}</p>
       <label className="mt-4 block font-medium" htmlFor="form-export">
         JSON
       </label>
@@ -30,15 +30,15 @@ export function MappingPanel({ value, onChange }: MappingPanelProps) {
         value={value.formText}
         onChange={(event) => onChange({ ...value, formText: event.target.value })}
         rows={6}
-        className="mt-1 w-full rounded-md border border-[#d6d3d1] px-3 py-2 font-mono text-sm"
+        className="mt-1 w-full rounded-xl border border-line bg-canvas px-3 py-2 font-mono text-sm"
       />
       {value.formText.trim() && !parsed.ok ? (
-        <p role="alert" className="mt-2 text-sm text-[#7f1d1d]">
+        <p role="alert" className="mt-2 text-sm text-danger">
           {copy.mappingInvalid}
         </p>
       ) : null}
       <div className="mt-3 flex flex-wrap gap-2">
-        <label className="inline-flex h-11 cursor-pointer items-center rounded-md border border-[#0f5132] px-4 font-semibold text-[#0f5132] hover:bg-[#f3faf6]">
+        <label className="inline-flex h-10 cursor-pointer items-center rounded-full border border-line px-4 text-sm font-medium transition duration-200 hover:bg-soft">
           <input
             type="file"
             accept=".json,application/json"
@@ -55,14 +55,14 @@ export function MappingPanel({ value, onChange }: MappingPanelProps) {
         <button
           type="button"
           onClick={() => onChange(EXAMPLE_MAPPING)}
-          className="h-11 rounded-md border border-[#0f5132] px-4 font-semibold text-[#0f5132] hover:bg-[#f3faf6]"
+          className="h-10 rounded-full bg-ink px-4 text-sm font-medium text-canvas transition duration-200 hover:opacity-85"
         >
           {copy.mappingExample}
         </button>
         <button
           type="button"
           onClick={() => onChange({ formText: "", fields: {}, lines: {} })}
-          className="h-11 rounded-md border border-[#d6d3d1] px-4 font-semibold hover:bg-[#f5f5f4]"
+          className="h-10 rounded-full border border-line px-4 text-sm font-medium transition duration-200 hover:bg-soft"
         >
           {copy.mappingClear}
         </button>
@@ -77,7 +77,7 @@ export function MappingPanel({ value, onChange }: MappingPanelProps) {
                 onChange={(event) =>
                   onChange({ ...value, fields: { ...value.fields, [key]: event.target.value } })
                 }
-                className="mt-1 h-11 w-full rounded-md border border-[#d6d3d1] bg-white px-2 text-base"
+                className="mt-1 h-11 w-full rounded-xl border border-line bg-canvas px-3 text-base"
               >
                 <option value="">{copy.mappingNone}</option>
                 {scalars.map((field) => (
@@ -102,7 +102,7 @@ export function MappingPanel({ value, onChange }: MappingPanelProps) {
                   onChange={(event) =>
                     onChange({ ...value, lines: { ...value.lines, [key]: event.target.value } })
                   }
-                  className="mt-1 h-11 w-full rounded-md border border-[#d6d3d1] bg-white px-2 text-base"
+                  className="mt-1 h-11 w-full rounded-xl border border-line bg-canvas px-3 text-base"
                 >
                   <option value="">{copy.mappingNone}</option>
                   {columns.map((field) => (
@@ -116,7 +116,7 @@ export function MappingPanel({ value, onChange }: MappingPanelProps) {
           </div>
         </div>
       ) : null}
-      {ready ? <p className="mt-4 text-sm text-[#0f5132]">{copy.mappingReady}</p> : null}
+      {ready ? <p className="mt-4 text-sm font-medium">{copy.mappingReady}</p> : null}
     </section>
   );
 }

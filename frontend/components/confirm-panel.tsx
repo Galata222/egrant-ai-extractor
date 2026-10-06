@@ -72,7 +72,7 @@ export function ConfirmPanel({ payload, posted, copied, onCopy, onDownload }: Co
     <section
       ref={panel}
       aria-labelledby="confirmed-heading"
-      className="rounded-xl border border-[#0f5132] bg-white p-4"
+      className="border-t border-line pt-8"
     >
       <h2 id="confirmed-heading" className="font-semibold">
         {copy.confirmedValues}
@@ -80,11 +80,11 @@ export function ConfirmPanel({ payload, posted, copied, onCopy, onDownload }: Co
       <div className="mt-3 flex flex-col gap-4">
         {blocks.map((block) => (
           <div key={block.title}>
-            <h3 className="text-sm font-semibold text-[#0f5132]">{block.title}</h3>
+            <h3 className="text-sm font-semibold">{block.title}</h3>
             <dl className="mt-1">
               {block.lines.map((line) => (
-                <div key={`${block.title}-${line.label}`} className="grid grid-cols-[minmax(8rem,40%)_1fr] gap-3 border-b border-[#e7e5e4] py-2">
-                  <dt className="text-[#44403c]">{line.label}</dt>
+                <div key={`${block.title}-${line.label}`} className="grid grid-cols-[minmax(8rem,40%)_1fr] gap-3 border-b border-line py-2">
+                  <dt className="text-muted">{line.label}</dt>
                   <dd className="font-medium break-words">{line.value}</dd>
                 </div>
               ))}
@@ -92,26 +92,26 @@ export function ConfirmPanel({ payload, posted, copied, onCopy, onDownload }: Co
           </div>
         ))}
       </div>
-      <p className="mt-4 text-[#292524]">{copy.integration}</p>
-      {posted ? <p className="mt-1 text-[#292524]">{copy.posted}</p> : null}
+      <p className="mt-4 text-muted">{copy.integration}</p>
+      {posted ? <p className="mt-1 text-muted">{copy.posted}</p> : null}
       <div className="mt-3 flex flex-wrap gap-2">
         <button
           type="button"
           onClick={onCopy}
-          className="h-11 rounded-md bg-[#0f5132] px-4 font-semibold text-white hover:bg-[#0c3f27]"
+          className="h-10 rounded-full bg-ink px-4 text-sm font-medium text-canvas transition duration-200 hover:opacity-85"
         >
           {copied ? copy.copied : copy.copyJson}
         </button>
         <button
           type="button"
           onClick={onDownload}
-          className="h-11 rounded-md border border-[#0f5132] px-4 font-semibold text-[#0f5132] hover:bg-[#f3faf6]"
+          className="h-10 rounded-full border border-line px-4 text-sm font-medium transition duration-200 hover:bg-soft"
         >
           {copy.download}
         </button>
       </div>
       <h3 className="mt-4 text-sm font-semibold">{copy.confirmedTitle}</h3>
-      <pre className="mt-2 max-h-80 overflow-auto rounded-md bg-[#1c1917] p-3 text-sm text-[#fafaf9]">
+      <pre className="mt-2 max-h-80 overflow-auto rounded-xl bg-ink p-3 text-sm text-canvas">
         {JSON.stringify(payload, null, 2)}
       </pre>
     </section>

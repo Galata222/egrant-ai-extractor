@@ -27,6 +27,15 @@ type Copy = {
   confirmedValues: string;
   preview: string;
   language: string;
+  navTagline: string;
+  sampleShort: string;
+  themeDark: string;
+  themeLight: string;
+  browse: string;
+  orWord: string;
+  encrypted: string;
+  stepUpload: string;
+  fileAccepted: string;
   actions: string;
   sampleFailed: string;
   sections: Record<string, string>;
@@ -150,6 +159,15 @@ const dictionaries: Record<Lang, Copy> = {
     confirmedValues: "Potvrdené údaje",
     preview: "Náhľad dokladu",
     language: "Jazyk",
+    navTagline: "Overenie údajov z dokladov",
+    sampleShort: "Ukážka",
+    themeDark: "Tmavý režim",
+    themeLight: "Svetlý režim",
+    browse: "Prehliadať",
+    orWord: "ALEBO",
+    encrypted: "Šifrované od konca po koniec",
+    stepUpload: "Krok 1 z 2",
+    fileAccepted: "Súbor prijatý",
     actions: "Akcie",
     sampleFailed: errorsSk.sample_failed,
     sections: {
@@ -234,6 +252,15 @@ const dictionaries: Record<Lang, Copy> = {
     confirmedValues: "Confirmed values",
     preview: "Document preview",
     language: "Language",
+    navTagline: "Document data for grant forms",
+    sampleShort: "Sample",
+    themeDark: "Dark mode",
+    themeLight: "Light mode",
+    browse: "Browse",
+    orWord: "OR",
+    encrypted: "End-to-end encrypted",
+    stepUpload: "Step 1 of 2",
+    fileAccepted: "File accepted",
     actions: "Actions",
     sampleFailed: errorsEn.sample_failed,
     sections: {

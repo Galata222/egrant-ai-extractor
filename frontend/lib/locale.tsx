@@ -51,7 +51,7 @@ export function useCopy() {
 export function LanguageSwitch() {
   const copy = useCopy();
   return (
-    <div role="group" aria-label={copy.language} className="flex overflow-hidden rounded-md border border-[#d6d3d1]">
+    <div role="group" aria-label={copy.language} className="flex h-9 items-center rounded-full border border-line bg-card p-0.5">
       <LangButton code="sk" label="SK" />
       <LangButton code="en" label="EN" />
     </div>
@@ -66,8 +66,8 @@ function LangButton({ code, label }: { code: Lang; label: string }) {
       type="button"
       aria-pressed={selected}
       onClick={() => copy.setLang(code)}
-      className={`h-9 min-w-11 px-2 font-semibold ${
-        selected ? "bg-[#0f5132] text-white" : "bg-white text-[#1c1917] hover:bg-[#f5f5f4]"
+      className={`h-8 min-w-9 rounded-full px-2 text-[12px] font-medium transition duration-200 ${
+        selected ? "bg-ink text-canvas" : "text-muted hover:text-ink"
       }`}
     >
       {label}

@@ -5,7 +5,8 @@ import { UploadPanel } from "@/components/upload-panel";
 import { VerificationDesk } from "@/components/verification-desk";
 import { extractFile, validateFile } from "@/lib/api";
 import { EMPTY_MAPPING, loadMapping, mappingPayload, saveMapping, type StoredMapping } from "@/lib/form-export";
-import { LanguageSwitch, useCopy } from "@/lib/locale";
+import { SiteHeader } from "@/components/site-header";
+import { useCopy } from "@/lib/locale";
 import { blockers, toConfirmed } from "@/lib/export";
 import { addLineItem, removeLineItem, updateTagValue } from "@/lib/tree";
 import type { ConfirmedFill, Tree } from "@/lib/types";
@@ -132,36 +133,26 @@ export function ExtractorApp({ embed }: { embed: boolean }) {
     URL.revokeObjectURL(url);
   }
 
+  if (phase === "upload" || phase === "loading") {
+    return (
+      <UploadPanel
+        error={error}
+        loading={phase === "loading"}
+        mapping={mapping}
+        onMapping={(next) => {
+          setMapping(next);
+          saveMapping(next);
+        }}
+        onFile={submit}
+        onSample={loadSample}
+      />
+    );
+  }
+
   return (
-    <div className="flex min-h-dvh flex-col">
-      <header className="border-b border-[#d6d3d1] bg-white">
-        <div className="mx-auto flex max-w-6xl items-start justify-between gap-4 px-4 py-4">
-          <div>
-            {embed ? null : <p className="text-sm font-semibold text-[#0f5132]">{copy.brand}</p>}
-            <h1 className="text-2xl font-semibold tracking-tight">{embed ? copy.embedTitle : copy.title}</h1>
-            {embed ? null : <p className="mt-1 text-[#44403c]">{copy.subtitle}</p>}
-          </div>
-          <LanguageSwitch />
-        </div>
-      </header>
+    <div className="flex min-h-dvh flex-col bg-canvas text-ink">
+      <SiteHeader embed={embed} />
       <main className="flex-1">
-        {phase === "loading" ? (
-          <p role="status" className="px-4 py-16 text-center text-xl font-medium">
-            {copy.loading}
-          </p>
-        ) : null}
-        {phase === "upload" ? (
-          <UploadPanel
-            error={error}
-            mapping={mapping}
-            onMapping={(next) => {
-              setMapping(next);
-              saveMapping(next);
-            }}
-            onFile={submit}
-            onSample={loadSample}
-          />
-        ) : null}
         {phase === "review" && file && previewUrl && tree ? (
           <VerificationDesk
             file={file}

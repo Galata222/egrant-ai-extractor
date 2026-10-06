@@ -28,61 +28,81 @@ type VerificationDeskProps = {
 export function VerificationDesk(props: VerificationDeskProps) {
   const copy = useCopy();
   const disabled = props.blocked.length > 0;
+  const kind = copy.kinds[props.documentKind] ?? props.documentKind;
 
   return (
-    <div className="mx-auto grid w-full max-w-6xl gap-4 px-4 py-6 lg:grid-cols-2 lg:items-start">
-      <div className="lg:sticky lg:top-4">
-        <DocumentPane file={props.file} url={props.previewUrl} pagePreview={props.pagePreview} />
-      </div>
-      <form
-        className="flex flex-col gap-4"
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (!disabled) props.onConfirm();
-        }}
-      >
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-xl font-semibold">{copy.form}</h2>
+    <div className="mx-auto w-full max-w-6xl px-5 pt-12 pb-16">
+      <div className="h-16 w-[3px] rounded-full bg-gradient-to-b from-[#5b6cff] to-[#9b6bff]" />
+      <div className="mt-6 flex flex-wrap items-end justify-between gap-6">
+        <div>
+          <p className="text-sm text-muted">{props.file.name}</p>
+          <h1 className="display mt-2 text-5xl leading-[0.95] sm:text-6xl">{kind}</h1>
+          <p className="mt-4 max-w-md text-[15px] text-muted">{copy.reviewNote}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={props.onReset}
-            className="h-11 rounded-md border border-[#d6d3d1] bg-white px-4 font-semibold hover:bg-[#f5f5f4]"
+            className="h-11 rounded-full border border-line bg-card px-5 text-sm font-medium transition duration-200 hover:bg-soft"
           >
             {copy.reset}
           </button>
-        </div>
-        <p className="text-[#44403c]">{copy.reviewNote}</p>
-        <p className="text-sm font-semibold text-[#0f5132]">{copy.kinds[props.documentKind] ?? props.documentKind}</p>
-        <EgrantForm
-          tree={props.tree}
-          onChange={props.onChange}
-          onAddItem={props.onAddItem}
-          onRemoveItem={props.onRemoveItem}
-        />
-        {props.confirmed ? null : (
-          <div className="flex flex-wrap items-center gap-3">
+          {props.confirmed ? null : (
             <button
-              type="submit"
+              type="button"
               disabled={disabled}
-              className="h-12 rounded-md bg-[#0f5132] px-5 font-semibold text-white hover:bg-[#0c3f27] disabled:cursor-not-allowed disabled:bg-[#e7e5e4] disabled:text-[#44403c]"
+              onClick={props.onConfirm}
+              className="h-11 rounded-full bg-ink px-5 text-sm font-medium text-canvas transition duration-200 hover:opacity-85 disabled:cursor-not-allowed disabled:bg-soft disabled:text-muted disabled:opacity-100"
             >
               {copy.confirm}
             </button>
-            {disabled ? (
-              <p className="text-[#5c3d06]">{copy.missingCount(props.blocked.length)}</p>
-            ) : null}
-          </div>
-        )}
-        {props.confirmed ? (
-          <ConfirmPanel
-            payload={props.confirmed}
-            posted={props.posted}
-            copied={props.copied}
-            onCopy={props.onCopy}
-            onDownload={props.onDownload}
+          )}
+        </div>
+      </div>
+      {disabled && !props.confirmed ? (
+        <p className="mt-4 text-sm text-warn">{copy.missingCount(props.blocked.length)}</p>
+      ) : null}
+
+      <div className="mt-10 overflow-hidden rounded-[28px] border border-line bg-line lg:grid lg:grid-cols-2">
+        <div className="bg-card lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:overflow-auto">
+          <DocumentPane file={props.file} url={props.previewUrl} pagePreview={props.pagePreview} />
+        </div>
+        <form
+          className="flex flex-col gap-8 bg-canvas px-5 py-6 sm:px-6"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!disabled) props.onConfirm();
+          }}
+        >
+          <h2 className="display text-3xl">{copy.form}</h2>
+          <EgrantForm
+            tree={props.tree}
+            onChange={props.onChange}
+            onAddItem={props.onAddItem}
+            onRemoveItem={props.onRemoveItem}
           />
-        ) : null}
-      </form>
+          {props.confirmed ? (
+            <ConfirmPanel
+              payload={props.confirmed}
+              posted={props.posted}
+              copied={props.copied}
+              onCopy={props.onCopy}
+              onDownload={props.onDownload}
+            />
+          ) : (
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="submit"
+                disabled={disabled}
+                className="h-11 rounded-full bg-ink px-5 text-sm font-medium text-canvas transition duration-200 hover:opacity-85 disabled:cursor-not-allowed disabled:bg-soft disabled:text-muted disabled:opacity-100"
+              >
+                {copy.confirm}
+              </button>
+              {disabled ? <p className="text-sm text-warn">{copy.missingCount(props.blocked.length)}</p> : null}
+            </div>
+          )}
+        </form>
+      </div>
     </div>
   );
 }
