@@ -2,6 +2,7 @@
 
 import { useCopy } from "@/lib/locale";
 import { fieldNeedsAttention } from "@/lib/export";
+import { isLineSection } from "@/lib/tree";
 import type { TagValue, Tree } from "@/lib/types";
 import { WarningIcon } from "@/components/warning-icon";
 
@@ -17,64 +18,18 @@ export function EgrantForm({ tree, onChange, onAddItem, onRemoveItem }: EgrantFo
   return (
     <div className="flex flex-col gap-6">
       {tree.roots[0]?.sections.map((section) =>
-        section.id === "polozky" ? (
+        isLineSection(tree, section.id, section.role) ? (
           <fieldset key={section.id} className="rounded-xl border border-[#d6d3d1] bg-white p-4">
             <legend className="px-1 font-semibold">{copy.sections[section.id] ?? section.title}</legend>
             {section.items.length === 0 ? (
               <p className="mb-3 text-[#44403c]">{copy.emptyItems}</p>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-left">
-                  <thead>
-                    <tr className="text-sm text-[#44403c]">
-                      <th className="px-1 py-2 font-semibold">{copy.tags.TABLE_ITEM_STRING}</th>
-                      <th className="px-1 py-2 font-semibold">{copy.tags.TABLE_ITEM_CURRENCY}</th>
-                      <th className="px-1 py-2">
-                        <span className="sr-only">{copy.actions}</span>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {section.items.map((item) => {
-                      const description = item.tags[0];
-                      const amount = item.tags[1];
-                      return (
-                        <tr key={item.id} className="align-top">
-                          <td className="px-1 py-2">
-                            {description ? (
-                              <TagInput
-                                tag={description}
-                                sibling={amount}
-                                inputId={`${item.id}-${description.tag}`}
-                                onChange={(value) => onChange(section.id, item.id, description.tag, value)}
-                              />
-                            ) : null}
-                          </td>
-                          <td className="px-1 py-2">
-                            {amount ? (
-                              <TagInput
-                                tag={amount}
-                                sibling={description}
-                                inputId={`${item.id}-${amount.tag}`}
-                                onChange={(value) => onChange(section.id, item.id, amount.tag, value)}
-                              />
-                            ) : null}
-                          </td>
-                          <td className="px-1 py-2">
-                            <button
-                              type="button"
-                              onClick={() => onRemoveItem(item.id)}
-                              className="h-11 rounded-md border border-[#d6d3d1] px-3 text-sm font-semibold hover:bg-[#f5f5f4]"
-                            >
-                              {copy.removeItem}
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              <LineItemTable
+                sectionId={section.id}
+                items={section.items}
+                onChange={onChange}
+                onRemoveItem={onRemoveItem}
+              />
             )}
             <button
               type="button"
@@ -103,6 +58,110 @@ export function EgrantForm({ tree, onChange, onAddItem, onRemoveItem }: EgrantFo
       )}
     </div>
   );
+}
+
+function LineItemTable({
+  sectionId,
+  items,
+  onChange,
+  onRemoveItem,
+}: {
+  sectionId: string;
+  items: Tree["roots"][number]["sections"][number]["items"];
+  onChange: EgrantFormProps["onChange"];
+  onRemoveItem: EgrantFormProps["onRemoveItem"];
+}) {
+  const copy = useCopy();
+  const sample = items[0];
+  const sampleParts = sample ? lineParts(sample) : null;
+  const showFiles = items.some((item) => lineParts(item).file);
+  const descriptionLabel = sampleParts?.description
+    ? (copy.tags[sampleParts.description.tag] ?? sampleParts.description.label)
+    : copy.tags.TABLE_ITEM_STRING;
+  const amountLabel = sampleParts?.amount
+    ? (copy.tags[sampleParts.amount.tag] ?? sampleParts.amount.label)
+    : copy.tags.TABLE_ITEM_CURRENCY;
+  const fileLabelText = sampleParts?.file
+    ? (copy.tags[sampleParts.file.tag] ?? sampleParts.file.label)
+    : copy.tags["doklad.faktura"];
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full border-collapse text-left">
+        <thead>
+          <tr className="text-sm text-[#44403c]">
+            <th className="px-1 py-2 font-semibold">{descriptionLabel}</th>
+            <th className="px-1 py-2 font-semibold">{amountLabel}</th>
+            {showFiles ? <th className="px-1 py-2 font-semibold">{fileLabelText}</th> : null}
+            <th className="px-1 py-2">
+              <span className="sr-only">{copy.actions}</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item) => {
+            const { description, amount, file: invoice } = lineParts(item);
+            return (
+              <tr key={item.id} className="align-top">
+                <td className="px-1 py-2">
+                  {description ? (
+                    <TagInput
+                      tag={description}
+                      sibling={amount}
+                      inputId={`${item.id}-${description.tag}`}
+                      onChange={(value) => onChange(sectionId, item.id, description.tag, value)}
+                    />
+                  ) : null}
+                </td>
+                <td className="px-1 py-2">
+                  {amount ? (
+                    <TagInput
+                      tag={amount}
+                      sibling={description}
+                      inputId={`${item.id}-${amount.tag}`}
+                      onChange={(value) => onChange(sectionId, item.id, amount.tag, value)}
+                    />
+                  ) : null}
+                </td>
+                {showFiles ? (
+                  <td className="px-1 py-2">
+                    <p className="pt-2 text-sm break-all" title={invoice?.value ?? undefined}>
+                      {fileLabel(invoice?.value ?? null)}
+                    </p>
+                  </td>
+                ) : null}
+                <td className="px-1 py-2">
+                  <button
+                    type="button"
+                    onClick={() => onRemoveItem(item.id)}
+                    className="h-11 rounded-md border border-[#d6d3d1] px-3 text-sm font-semibold hover:bg-[#f5f5f4]"
+                  >
+                    {copy.removeItem}
+                  </button>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function lineParts(item: { tags: TagValue[] }) {
+  const file = item.tags.find((tag) => tag.tag === "doklad.faktura" || Boolean(tag.value && tag.value.includes("/file/")));
+  const visible = item.tags.filter((tag) => tag !== file && !isFileId(tag, item.tags));
+  return { description: visible[0], amount: visible[1], file };
+}
+
+function isFileId(tag: TagValue, tags: TagValue[]): boolean {
+  if (tag.tag === "doklad.subor_id" || tag.tag.endsWith(".subor_id")) return true;
+  return Boolean(tag.value && /^\d+$/.test(tag.value) && tags.some((item) => item.value?.includes("/file/")));
+}
+
+function fileLabel(value: string | null): string {
+  if (!value) return "";
+  const match = value.match(/\/file\/([^/\s]+)/i);
+  return match?.[1] ?? value;
 }
 
 function TagInput({

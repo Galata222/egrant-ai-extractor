@@ -1,9 +1,10 @@
 import logging
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.ingest import IngestError
+from app.mapping.form_export import parse_mapping
 from app.pipeline import extract_document
 from app.schemas import ExtractionResponse
 
@@ -24,10 +25,17 @@ def health() -> dict[str, str]:
 
 
 @app.post("/extract", response_model=ExtractionResponse)
-async def extract(file: UploadFile = File(...)) -> ExtractionResponse:
+async def extract(
+    file: UploadFile = File(...),
+    mapping: str | None = Form(None),
+) -> ExtractionResponse:
     data = await file.read()
     try:
-        return extract_document(data, file.filename or "doklad")
+        chosen = parse_mapping(mapping)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail={"code": str(exc)}) from exc
+    try:
+        return extract_document(data, file.filename or "doklad", chosen)
     except IngestError as exc:
         raise HTTPException(status_code=400, detail={"code": exc.code}) from exc
     except RuntimeError as exc:

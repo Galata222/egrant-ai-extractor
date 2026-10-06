@@ -103,6 +103,50 @@
         "string_label": "Názov položky",
         "currency_label": "Suma položky"
       }
+    },
+    "settlement": {
+      "sections": [
+        {
+          "id": "vyuctovanie",
+          "title": "Vyúčtovanie",
+          "item_id": "vyuctovanie",
+          "fields": [
+            {"key": "settlement_count", "tag": "vyuctovanie.pocet", "label": "Počet dokladov", "required": true},
+            {"key": "settlement_period", "tag": "vyuctovanie.obdobie", "label": "Obdobie", "required": true},
+            {"key": "settlement_total", "tag": "vyuctovanie.suma", "label": "Suma spolu", "required": true}
+          ]
+        }
+      ],
+      "line_items": {
+        "section_id": "polozky",
+        "section_title": "Položky dokladu",
+        "string_tag": "TABLE_ITEM_STRING",
+        "currency_tag": "TABLE_ITEM_CURRENCY",
+        "string_label": "Názov položky",
+        "currency_label": "Suma položky"
+      }
+    },
+    "statement": {
+      "sections": [
+        {
+          "id": "vypis",
+          "title": "Výpis z účtu",
+          "item_id": "vypis",
+          "fields": [
+            {"key": "booking_date", "tag": "vypis.datum", "label": "Dátum zaúčtovania", "required": true},
+            {"key": "counterparty", "tag": "vypis.protistrana", "label": "Protistrana", "required": true},
+            {"key": "statement_amount", "tag": "vypis.suma", "label": "Suma", "required": true}
+          ]
+        }
+      ],
+      "line_items": {
+        "section_id": "polozky",
+        "section_title": "Položky dokladu",
+        "string_tag": "TABLE_ITEM_STRING",
+        "currency_tag": "TABLE_ITEM_CURRENCY",
+        "string_label": "Názov položky",
+        "currency_label": "Suma položky"
+      }
     }
   }
 }

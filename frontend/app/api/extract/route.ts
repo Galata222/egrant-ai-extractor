@@ -12,6 +12,10 @@ export async function POST(request: Request) {
     }
     const body = new FormData();
     body.append("file", file, file.name);
+    const mapping = incoming.get("mapping");
+    if (typeof mapping === "string" && mapping.trim()) {
+      body.append("mapping", mapping);
+    }
     const upstream = await fetch(`${API_URL}/extract`, { method: "POST", body });
     const text = await upstream.text();
     return new Response(text, {

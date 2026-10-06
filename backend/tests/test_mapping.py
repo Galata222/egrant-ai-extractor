@@ -77,6 +77,66 @@ def test_english_invoice_maps_to_the_same_tags():
     assert items[1].tags[1].value == "434.56"
 
 
+def test_manager_mapping_replaces_the_default_tags():
+    from app.mapping.form_export import parse_mapping
+
+    mapping = parse_mapping(
+        """
+        {
+          "form": {
+            "type": "root",
+            "children": [
+              {
+                "type": "SECTION",
+                "name": "Žiadateľ",
+                "tag": "ziadatel_sekcia",
+                "children": [
+                  {"type": "SIMPLE_STRING", "name": "Názov", "tag": "ziadatel.nazov"},
+                  {"type": "SIMPLE_STRING", "name": "IČO", "tag": "ziadatel.ico", "mandatory": true}
+                ]
+              },
+              {
+                "type": "SECTION",
+                "name": "Faktúra",
+                "tag": "faktura_sekcia",
+                "children": [
+                  {
+                    "type": "TABLE_LIST",
+                    "name": "Položky",
+                    "tag": "polozky",
+                    "children": [
+                      {"type": "TABLE_ITEM_STRING", "name": "Položka", "tag": "polozka"},
+                      {"type": "TABLE_ITEM_CURRENCY", "name": "Suma", "tag": "suma"}
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "fields": {"supplier_name": "ziadatel.nazov", "ico": "ziadatel.ico"},
+          "lines": {"description": "polozka", "amount": "suma"}
+        }
+        """
+    )
+    response = to_response(extract_fields(LINES), 0.8, "mapped", mapping)
+    assert response.tree.roots[0].id == "formular"
+    assert _tag(response, "ziadatel.ico").value == "00151653"
+    assert _tag(response, "ziadatel.nazov").value == "Ateliér Sever, s. r. o."
+    assert _tag(response, "ziadatel.ico").required is True
+    tags = {
+        field.tag
+        for section in response.tree.roots[0].sections
+        for item in section.items
+        for field in item.tags
+    }
+    assert "dodavatel.ico" not in tags
+    items = next(section for section in response.tree.roots[0].sections if section.role == "lines").items
+    assert items[0].tags[0].tag == "polozka"
+    assert items[0].tags[0].value == "Grafický návrh plagátu"
+    assert items[0].tags[1].tag == "suma"
+    assert items[0].tags[1].value == "800.00"
+
+
 def test_below_threshold_becomes_null():
     draft = Draft(
         fields={"ico": Candidate("00151653", 0.5)},

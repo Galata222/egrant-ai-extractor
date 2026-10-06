@@ -20,8 +20,9 @@ function confirmedBlocks(
       const lines: ValueBlock["lines"] = [];
       section.items.forEach((item, index) => {
         if (section.id === "polozky") {
-          const name = item.tags.find((tag) => tag.tag === "TABLE_ITEM_STRING")?.value;
-          const amount = item.tags.find((tag) => tag.tag === "TABLE_ITEM_CURRENCY")?.value;
+          const visible = item.tags.filter((tag) => !isFileTag(tag, item.tags));
+          const name = item.tags.find((tag) => tag.tag === "TABLE_ITEM_STRING")?.value ?? visible[0]?.value;
+          const amount = item.tags.find((tag) => tag.tag === "TABLE_ITEM_CURRENCY")?.value ?? visible[1]?.value;
           lines.push({
             label: String(index + 1),
             value: [name, amount].filter(Boolean).join(" — ") || "—",
@@ -39,6 +40,15 @@ function confirmedBlocks(
     }
   }
   return blocks;
+}
+
+function isFileTag(
+  tag: { tag: string; value: string | null },
+  tags: Array<{ tag: string; value: string | null }>,
+): boolean {
+  if (tag.tag === "doklad.faktura" || tag.tag === "doklad.subor_id" || tag.tag.endsWith(".subor_id")) return true;
+  if (tag.value?.includes("/file/")) return true;
+  return Boolean(tag.value && /^\d+$/.test(tag.value) && tags.some((item) => item.value?.includes("/file/")));
 }
 
 type ConfirmPanelProps = {

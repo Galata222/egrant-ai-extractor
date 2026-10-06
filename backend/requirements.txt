@@ -3,6 +3,7 @@ uvicorn>=0.32
 python-multipart>=0.0.12
 pydantic>=2.10
 pillow>=11.0
+openpyxl>=3.1
 pymupdf>=1.25
 easyocr>=1.7
 torch>=2.6

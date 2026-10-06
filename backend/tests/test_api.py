@@ -11,6 +11,17 @@ def test_health():
     assert response.json()["status"] == "ok"
 
 
+def test_extract_rejects_a_broken_mapping():
+    client = TestClient(app)
+    response = client.post(
+        "/extract",
+        files={"file": ("poznamka.pdf", b"%PDF-1.4", "application/pdf")},
+        data={"mapping": "{"},
+    )
+    assert response.status_code == 400
+    assert response.json()["detail"]["code"] == "invalid_mapping"
+
+
 def test_extract_rejects_unknown_type():
     client = TestClient(app)
     response = client.post(

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { UploadPanel } from "@/components/upload-panel";
 import { VerificationDesk } from "@/components/verification-desk";
 import { extractFile, validateFile } from "@/lib/api";
+import { EMPTY_MAPPING, loadMapping, mappingPayload, saveMapping, type StoredMapping } from "@/lib/form-export";
 import { LanguageSwitch, useCopy } from "@/lib/locale";
 import { blockers, toConfirmed } from "@/lib/export";
 import { addLineItem, removeLineItem, updateTagValue } from "@/lib/tree";
@@ -25,6 +26,11 @@ export function ExtractorApp({ embed }: { embed: boolean }) {
   const [confirmed, setConfirmed] = useState<ConfirmedFill | null>(null);
   const [copied, setCopied] = useState(false);
   const [posted, setPosted] = useState(false);
+  const [mapping, setMapping] = useState<StoredMapping>(EMPTY_MAPPING);
+
+  useEffect(() => {
+    setMapping(loadMapping());
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -53,7 +59,7 @@ export function ExtractorApp({ embed }: { embed: boolean }) {
     rememberFile(next);
     setPhase("loading");
     try {
-      const result = await extractFile(next);
+      const result = await extractFile(next, mappingPayload(mapping));
       setDocumentId(result.document_id);
       setPagePreview(result.page_preview);
       setTree(structuredClone(result.tree));
@@ -144,7 +150,18 @@ export function ExtractorApp({ embed }: { embed: boolean }) {
             {copy.loading}
           </p>
         ) : null}
-        {phase === "upload" ? <UploadPanel error={error} onFile={submit} onSample={loadSample} /> : null}
+        {phase === "upload" ? (
+          <UploadPanel
+            error={error}
+            mapping={mapping}
+            onMapping={(next) => {
+              setMapping(next);
+              saveMapping(next);
+            }}
+            onFile={submit}
+            onSample={loadSample}
+          />
+        ) : null}
         {phase === "review" && file && previewUrl && tree ? (
           <VerificationDesk
             file={file}

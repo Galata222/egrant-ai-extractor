@@ -8,11 +8,15 @@ from PIL import Image
 
 from app.donut_extract import enabled as donut_enabled
 from app.donut_extract import extract_donut
-from app.gate import empty, enforce_vat, merge_candidate
+from app.egrant_ocr import configured as egrant_ocr_configured
+from app.egrant_ocr import read_text as egrant_ocr_text
+from app.gate import Candidate, empty, enforce_vat, merge_candidate
 from app.ingest import ingest
 from app.mapping.engine import to_response
+from app.mapping.form_export import Mapping
 from app.ocr_extract import Draft, extract_fields, lines_from_page
 from app.schemas import ExtractionResponse
+from app.xlsx_extract import extract_xlsx, is_xlsx
 
 
 def confidence_threshold() -> float:
@@ -26,11 +30,29 @@ def confidence_threshold() -> float:
     return value
 
 
-def extract_document(data: bytes, filename: str) -> ExtractionResponse:
+def extract_document(
+    data: bytes,
+    filename: str,
+    mapping: Mapping | None = None,
+) -> ExtractionResponse:
+    if is_xlsx(data, filename):
+        draft, image = extract_xlsx(data)
+        response = to_response(draft, confidence_threshold(), str(uuid4()), mapping)
+        return response.model_copy(update={"page_preview": preview_data_url(image)})
     started = time.perf_counter()
     page = ingest(data, filename)
-    pairs = lines_from_page(page)
-    ocr_draft = extract_fields([text for text, _score in pairs], [score for _text, score in pairs])
+    threshold = confidence_threshold()
+    external = _external_draft(data, filename)
+    had_text = page.embedded_text is not None
+    if page.embedded_text is None and external is not None and not _draft_empty(external):
+        ocr_draft = external
+        had_text = True
+    else:
+        pairs = lines_from_page(page)
+        had_text = had_text or bool(pairs)
+        ocr_draft = extract_fields([text for text, _score in pairs], [score for _text, score in pairs])
+        if page.embedded_text is not None and external is not None:
+            ocr_draft = fill_gaps(ocr_draft, external, threshold)
     donut_draft = Draft()
     # The vision model reads pages that have no text layer. A digital PDF keeps
     # the text layer so a receipt model cannot erase a checked value, and the
@@ -38,10 +60,10 @@ def extract_document(data: bytes, filename: str) -> ExtractionResponse:
     if page.embedded_text is None and donut_enabled():
         remaining = 14.0 - (time.perf_counter() - started)
         donut_draft = extract_donut(page.image, budget=remaining)
-    merged = merge_drafts(ocr_draft, donut_draft, confidence_threshold())
-    if page.embedded_text is None and not pairs and _draft_empty(merged):
+    merged = merge_drafts(ocr_draft, donut_draft, threshold)
+    if page.embedded_text is None and not had_text and _draft_empty(merged):
         raise RuntimeError("ocr_unavailable")
-    response = to_response(merged, confidence_threshold(), str(uuid4()))
+    response = to_response(merged, threshold, str(uuid4()), mapping)
     return response.model_copy(update={"page_preview": preview_data_url(page.image)})
 
 
@@ -52,6 +74,44 @@ def preview_data_url(image: Image.Image) -> str:
     preview.save(buffer, format="PNG")
     encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
     return f"data:image/png;base64,{encoded}"
+
+
+def fill_gaps(primary: Draft, secondary: Draft, threshold: float) -> Draft:
+    keys = set(primary.fields) | set(secondary.fields)
+    fields = {
+        key: _keep_checked(primary.fields.get(key, empty()), secondary.fields.get(key, empty()), threshold)
+        for key in keys
+    }
+    if "total_net" in fields or "total_gross" in fields:
+        net, gross = enforce_vat(fields.get("total_net", empty()), fields.get("total_gross", empty()))
+        fields["total_net"] = net
+        fields["total_gross"] = gross
+    lines = primary.lines or secondary.lines
+    text_found = any(candidate.value for candidate in primary.fields.values()) or bool(primary.lines)
+    kind = primary.kind if text_found or primary.kind != "invoice" else secondary.kind or "invoice"
+    return Draft(fields=fields, lines=lines, kind=kind)
+
+
+def _keep_checked(primary: Candidate, secondary: Candidate, threshold: float) -> Candidate:
+    if primary.value is not None and primary.confidence >= threshold:
+        return primary
+    if secondary.value is not None and secondary.confidence >= threshold:
+        return secondary
+    if primary.value is not None:
+        return primary
+    return secondary
+
+
+def _external_draft(data: bytes, filename: str) -> Draft | None:
+    if not egrant_ocr_configured():
+        return None
+    text = egrant_ocr_text(data, filename)
+    if not text:
+        return None
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    if not lines:
+        return None
+    return extract_fields(lines)
 
 
 def merge_drafts(ocr: Draft, donut: Draft, threshold: float) -> Draft:

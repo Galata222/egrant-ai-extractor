@@ -17,6 +17,15 @@ from app.validators import (
     parse_supplier_name,
 )
 
+_BOOKING = re.compile(
+    r"(?i)(?:d[áa]tum\s+(?:za[úu][čc]tovania|oper[áa]cie|transakcie)|"
+    r"booking\s+date|transaction\s+date|value\s+date)\s*[:.]?\s*(.+)$"
+)
+_COUNTERPARTY = re.compile(
+    r"(?i)(?:protistrana|pr[ií]jemca|odosielate[ľl]|n[áa]zov\s+protistrany|"
+    r"counterparty|beneficiary|payer)\s*[:.]?\s*(.+)$"
+)
+_STATEMENT_AMOUNT = ("suma", "ciastka", "transaction amount", "amount")
 _ISSUE = re.compile(
     r"(?i)(?:d[áa]tum\s+(?:vystavenia|vyhotovenia)|issue\s+date|date\s+of\s+issue|invoice\s+date|date\s+issued)\s*[:.]?\s*(.+)$"
 )
@@ -136,6 +145,8 @@ _reader = None
 class LineCandidate:
     description: Candidate
     amount: Candidate
+    invoice_file: Candidate = field(default_factory=empty)
+    file_id: Candidate = field(default_factory=empty)
 
 
 @dataclass
@@ -174,10 +185,18 @@ def extract_fields(lines: list[str], recognition: list[float | None] | None = No
     kind = classify_document(cleaned)
     if kind == "contract":
         return _extract_contract(cleaned, scores)
+    if kind == "statement":
+        return _extract_statement(cleaned, scores)
     return _extract_invoice(cleaned, scores, kind)
 
 
 def classify_document(lines: list[str]) -> str:
+    head = fold(" ".join(lines[:8]))
+    if re.search(
+        r"(?:vypis z uctu|bankovy vypis|bank statement|account statement|pohyby na ucte)",
+        head,
+    ):
+        return "statement"
     head = fold(" ".join(lines[:6]))
     if re.search(r"\b(?:zmluva|zmluvy|contract|agreement|dohoda)\b", head) and not re.search(
         r"\b(?:faktura|invoice)\b", head
@@ -266,6 +285,27 @@ def _extract_invoice(lines: list[str], scores: list[float | None], kind: str) ->
         },
         lines=_line_items(lines, scores),
     )
+
+
+def _extract_statement(lines: list[str], scores: list[float | None]) -> Draft:
+    return Draft(
+        kind="statement",
+        fields={
+            "booking_date": _search_date(lines, scores, _BOOKING),
+            "counterparty": _search_party(lines, scores),
+            "statement_amount": _search_labeled_money(lines, scores, _STATEMENT_AMOUNT),
+        },
+    )
+
+
+def _search_party(lines: list[str], scores: list[float | None]) -> Candidate:
+    for line in lines:
+        match = _COUNTERPARTY.search(line)
+        if not match:
+            continue
+        value = parse_supplier_name(match.group(1))
+        return _scored(value, name_anchor(value or ""), _score_of(line, lines, scores))
+    return empty()
 
 
 def _extract_contract(lines: list[str], scores: list[float | None]) -> Draft:

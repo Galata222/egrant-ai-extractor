@@ -16,6 +16,7 @@ export type Section = {
   id: string;
   title: string;
   items: Item[];
+  role?: string | null;
 };
 
 export type Root = {

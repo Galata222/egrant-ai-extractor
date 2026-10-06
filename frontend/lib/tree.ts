@@ -28,19 +28,18 @@ export function updateTagValue(
 }
 
 export function addLineItem(tree: Tree): Tree {
-  const item: Item = {
-    id: `polozka-${Date.now()}`,
-    tags: [
-      blankTag("TABLE_ITEM_STRING", "Názov položky"),
-      blankTag("TABLE_ITEM_CURRENCY", "Suma položky"),
-    ],
-  };
   return {
     roots: tree.roots.map((root) => ({
       ...root,
-      sections: root.sections.map((section) =>
-        section.id === "polozky" ? { ...section, items: [...section.items, item] } : section,
-      ),
+      sections: root.sections.map((section) => {
+        if (!isLineSection(tree, section.id, section.role)) return section;
+        const sample = section.items[0];
+        const tags = sample
+          ? sample.tags.map((tag) => blankTag(tag.tag, tag.label))
+          : [blankTag("TABLE_ITEM_STRING", "Názov položky"), blankTag("TABLE_ITEM_CURRENCY", "Suma položky")];
+        const item: Item = { id: `polozka-${Date.now()}`, tags };
+        return { ...section, items: [...section.items, item] };
+      }),
     })),
   };
 }
@@ -50,12 +49,18 @@ export function removeLineItem(tree: Tree, itemId: string): Tree {
     roots: tree.roots.map((root) => ({
       ...root,
       sections: root.sections.map((section) =>
-        section.id === "polozky"
+        isLineSection(tree, section.id, section.role)
           ? { ...section, items: section.items.filter((item) => item.id !== itemId) }
           : section,
       ),
     })),
   };
+}
+
+export function isLineSection(tree: Tree, sectionId: string, role: string | null | undefined): boolean {
+  const marked = tree.roots.some((root) => root.sections.some((section) => section.role === "lines"));
+  if (marked) return role === "lines";
+  return sectionId === "polozky";
 }
 
 function editedTag(tag: TagValue, raw: string): TagValue {

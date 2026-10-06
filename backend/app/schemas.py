@@ -19,6 +19,7 @@ class Section(BaseModel):
     id: str
     title: str
     items: list[Item]
+    role: str | None = None
 
 
 class Root(BaseModel):

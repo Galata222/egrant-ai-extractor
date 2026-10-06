@@ -10,8 +10,7 @@ type DocumentPaneProps = {
 
 export function DocumentPane({ file, url, pagePreview }: DocumentPaneProps) {
   const copy = useCopy();
-  const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-  const src = isPdf && pagePreview ? pagePreview : url;
+  const src = pagePreview || url;
 
   return (
     <section aria-labelledby="document-heading" className="rounded-xl border border-[#d6d3d1] bg-white">

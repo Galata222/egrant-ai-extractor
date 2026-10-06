@@ -175,3 +175,79 @@ def test_photo_uses_donut_when_the_text_reader_is_missing(monkeypatch):
     response = extract_document(_png(), "photo.png")
     assert response.document_kind == "receipt"
     assert _tag(response, "dodavatel.nazov").value == "North Studio Ltd."
+
+
+STATEMENT_SK = [
+    "VÝPIS Z ÚČTU",
+    "Dátum zaúčtovania: 12.03.2026",
+    "Protistrana: Ateliér Sever, s. r. o.",
+    "Suma: 1 481,47 EUR",
+]
+
+STATEMENT_EN = [
+    "BANK STATEMENT",
+    "Booking date: 12 March 2026",
+    "Counterparty: North Studio Ltd.",
+    "Amount: 1,481.47 EUR",
+]
+
+
+def test_slovak_statement_maps_booking_date_counterparty_and_amount():
+    response = to_response(extract_fields(STATEMENT_SK), 0.8, "statement-sk")
+    assert response.document_kind == "statement"
+    assert _tag(response, "vypis.datum").value == "12.03.2026"
+    assert _tag(response, "vypis.protistrana").value == "Ateliér Sever, s. r. o."
+    assert _tag(response, "vypis.suma").value == "1481.47"
+
+
+def test_english_statement_maps_the_same_tags():
+    response = to_response(extract_fields(STATEMENT_EN), 0.8, "statement-en")
+    assert response.document_kind == "statement"
+    assert _tag(response, "vypis.datum").value == "12.03.2026"
+    assert _tag(response, "vypis.protistrana").value == "North Studio Ltd."
+    assert _tag(response, "vypis.suma").value == "1481.47"
+
+
+def test_statement_without_a_counterparty_stays_null():
+    draft = extract_fields(["VÝPIS Z ÚČTU", "Dátum zaúčtovania: 12.03.2026", "Suma: 10,00 EUR"])
+    assert draft.kind == "statement"
+    assert draft.fields["booking_date"].value == "12.03.2026"
+    assert draft.fields["counterparty"].value is None
+    assert draft.fields["statement_amount"].value == "10.00"
+    response = to_response(draft, 0.8, "statement-gap")
+    assert _tag(response, "vypis.protistrana").value is None
+    assert "vypis.protistrana" in response.needs_review
+
+
+def test_plain_ocr_fills_a_gap_and_keeps_the_text_layer(monkeypatch):
+    from fixtures.build_sample import build
+
+    pdf_path, _png_path = build()
+    monkeypatch.setenv("EGRANT_OCR_URL", "http://ocr.example/text")
+    monkeypatch.setattr(
+        "app.pipeline.egrant_ocr_text",
+        lambda _data, _filename: "\n".join(
+            [
+                "FAKTÚRA",
+                "Dodávateľ",
+                "Iný názov, s. r. o.",
+                "IČO: 00318574",
+                "DIČ: SK1020215534",
+            ]
+        ),
+    )
+    response = extract_document(pdf_path.read_bytes(), pdf_path.name)
+    assert _tag(response, "dodavatel.nazov").value == "Ateliér Sever, s. r. o."
+    assert _tag(response, "dodavatel.ico").value == "00151653"
+    assert _tag(response, "dodavatel.dic").value == "SK1020215534"
+
+
+def test_empty_ocr_response_keeps_the_text_layer(monkeypatch):
+    from fixtures.build_sample import build
+
+    pdf_path, _png_path = build()
+    monkeypatch.setenv("EGRANT_OCR_URL", "http://ocr.example/text")
+    monkeypatch.setattr("app.pipeline.egrant_ocr_text", lambda _data, _filename: " ")
+    response = extract_document(pdf_path.read_bytes(), pdf_path.name)
+    assert _tag(response, "dodavatel.ico").value == "00151653"
+    assert _tag(response, "dodavatel.dic").value is None
