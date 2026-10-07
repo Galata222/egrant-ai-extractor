@@ -29,9 +29,11 @@ _STATEMENT_AMOUNT = ("suma", "ciastka", "transaction amount", "amount")
 _ISSUE = re.compile(
     r"(?i)(?:d[áa]tum\s+(?:vystavenia|vyhotovenia)|issue\s+date|date\s+of\s+issue|invoice\s+date|date\s+issued)\s*[:.]?\s*(.+)$"
 )
-_DUE = re.compile(r"(?i)(?:d[áa]tum\s+splatnosti|due\s+date|payment\s+due|date\s+due)\s*[:.]?\s*(.+)$")
+_DUE = re.compile(
+    r"(?i)(?:d[áa]tum\s+splatnosti|splatnos[ťt](?=\s*:)|due\s+date|payment\s+due|date\s+due)\s*[:.]?\s*(.+)$"
+)
 _INVOICE = re.compile(
-    r"(?i)(?:č[íi]slo\s+fakt[úu]ry|fakt[úu]ra\s*č\.?|variabiln[ýy]\s+symbol|"
+    r"(?i)(?:č[íi]slo\s+fakt[úu]ry|fakt[úu]ra\s+č[íi]slo|fakt[úu]ra\s*č\.?|variabiln[ýy]\s+symbol|"
     r"č[íi]slo\s+dokladu|č[íi]slo\s+blo[čc]ka|"
     r"invoice\s*(?:number|no\.?|#)|invoice\s*id|receipt\s*(?:number|no\.?))\s*[:.]?\s*"
     r"([A-Za-z0-9][A-Za-z0-9/\-]{1,39})"
@@ -67,6 +69,7 @@ _NET_LABELS = (
     "zaklad dane",
     "suma bez dph",
     "celkom bez dph",
+    "spolu bez dph",
     "net amount",
     "amount excl",
     "total excl",
@@ -98,6 +101,8 @@ _STRONG_GROSS = (
     "amount due",
     "total due",
     "balance due",
+    "k uhrade",
+    "na uhradu",
 )
 _CONTRACT_PRICE = (
     "zmluvna cena",
@@ -124,6 +129,8 @@ _TOTAL_PREFIXES = (
     "celkom",
     "suma bez",
     "suma s",
+    "suma na",
+    "k uhrade",
     "dph",
     "bez dph",
     "subtotal",
@@ -136,6 +143,19 @@ _TOTAL_PREFIXES = (
     "vat",
     "tax",
     "total",
+)
+
+_BARE_AMOUNT = re.compile(rf"(?i)^{_ITEM_AMOUNT}\s*(?:eur|usd|gbp|czk|€|\$|£)?$")
+_SPLIT_LABELS = (
+    (_INVOICE, parse_invoice_number),
+    (_CONTRACT_NO, parse_invoice_number),
+    (_ISSUE, parse_date),
+    (_DUE, parse_date),
+    (_SIGNED, parse_date),
+    (_EFFECTIVE, parse_date),
+    (_BOOKING, parse_date),
+    (_ICO, parse_ico),
+    (_DIC, parse_dic),
 )
 
 _reader = None
@@ -182,12 +202,63 @@ def normalize_line(line: str) -> str:
 def extract_fields(lines: list[str], recognition: list[float | None] | None = None) -> Draft:
     cleaned = [normalize_line(line) for line in lines if normalize_line(line)]
     scores = _align_scores(lines, cleaned, recognition)
+    cleaned, scores = _join_split_labels(cleaned, scores)
     kind = classify_document(cleaned)
     if kind == "contract":
         return _extract_contract(cleaned, scores)
     if kind == "statement":
         return _extract_statement(cleaned, scores)
     return _extract_invoice(cleaned, scores, kind)
+
+
+def _join_split_labels(
+    lines: list[str],
+    scores: list[float | None],
+) -> tuple[list[str], list[float | None]]:
+    """Put a label and the value printed on the line below it back on one line.
+
+    A text layer often gives "Číslo faktúry" and "2026-0142" as two lines. They
+    are joined only when the lower line passes the validator for that label, so
+    a heading such as "Dodávateľ" is never swallowed.
+    """
+    joined: list[str] = []
+    kept: list[float | None] = []
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        if index + 1 < len(lines) and _takes_value(line, lines[index + 1]):
+            joined.append(f"{line.rstrip(' :.')}: {lines[index + 1]}")
+            kept.append(_weakest(scores[index], scores[index + 1]))
+            index += 2
+            continue
+        joined.append(line)
+        kept.append(scores[index])
+        index += 1
+    return joined, kept
+
+
+def _takes_value(label: str, value: str) -> bool:
+    if len(label) > 40 or re.search(r"\d", label):
+        return False
+    folded = fold(label).strip(" :.")
+    money_labels = _NET_LABELS + _GROSS_LABELS + _CONTRACT_PRICE + _STATEMENT_AMOUNT
+    if any(folded == name for name in money_labels):
+        return bool(_BARE_AMOUNT.match(value.strip())) and parse_money(value) is not None
+    head = label.rstrip(" :.")
+    candidate = f"{head}: {value}"
+    for pattern, parser in _SPLIT_LABELS:
+        # The lower line must be a bare value, not a labelled line of its own.
+        if pattern.search(label) or pattern.search(value):
+            continue
+        match = pattern.search(candidate)
+        if match and match.start() < len(head) and parser(match.group(1)) is not None:
+            return True
+    return False
+
+
+def _weakest(first: float | None, second: float | None) -> float | None:
+    known = [score for score in (first, second) if score is not None]
+    return min(known) if known else None
 
 
 def classify_document(lines: list[str]) -> str:
@@ -329,8 +400,11 @@ def _extract_contract(lines: list[str], scores: list[float | None]) -> Draft:
 def _supplier_name(region: list[str], scores: list[float | None], lines: list[str]) -> Candidate:
     if not region:
         return empty()
+    # Supplier and customer printed side by side cannot be split from text alone.
+    if _supplier_column(region[0]) is not None:
+        return empty()
     inline = _SUPPLIER_SPLIT.split(region[0], maxsplit=1)
-    if len(inline) == 2:
+    if len(inline) == 2 and inline[1].strip():
         name = parse_supplier_name(inline[1])
         return _scored(name, name_anchor(name or ""), _score_of(region[0], lines, scores))
     for line in region[1:]:
@@ -342,21 +416,52 @@ def _supplier_name(region: list[str], scores: list[float | None], lines: list[st
 
 
 def _anchored_ico(region: list[str], scores: list[float | None], lines: list[str]) -> Candidate:
+    column = _supplier_column(region[0]) if region else None
     for line in region:
-        match = _ICO.search(line)
-        if not match:
+        raw = _party_value(_ICO, line, column)
+        if raw is None:
             continue
-        return _scored(parse_ico(match.group(1)), ico_anchor(line), _score_of(line, lines, scores))
+        return _scored(parse_ico(raw), ico_anchor(line), _score_of(line, lines, scores))
     return empty()
 
 
 def _anchored_dic(region: list[str], scores: list[float | None], lines: list[str]) -> Candidate:
+    column = _supplier_column(region[0]) if region else None
     for line in region:
-        match = _DIC.search(line)
-        if not match:
+        raw = _party_value(_DIC, line, column)
+        if raw is None:
             continue
-        return _scored(parse_dic(match.group(1)), dic_anchor(line), _score_of(line, lines, scores))
+        value = parse_dic(raw)
+        # "DIČ: 2020123456" is followed by "IČ DPH: SK2020123456". Read on only then.
+        if value is None and re.fullmatch(r"\d{10}", re.sub(r"\s", "", raw)):
+            continue
+        return _scored(value, dic_anchor(line), _score_of(line, lines, scores))
     return empty()
+
+
+def _supplier_column(header: str) -> int | None:
+    """Return 0 or 1 when supplier and customer share one header line."""
+    folded = fold(header)
+    supplier = re.search(r"dodavatel|poskytovatel|\b(?:supplier|vendor|seller)\b", folded)
+    customer = min(
+        (folded.find(marker) for marker in _PARTY_END if marker in folded),
+        default=-1,
+    )
+    if supplier is None or customer < 0:
+        return None
+    return 0 if supplier.start() < customer else 1
+
+
+def _party_value(pattern: re.Pattern[str], line: str, column: int | None) -> str | None:
+    matches = list(pattern.finditer(line))
+    if not matches:
+        return None
+    if column is None:
+        return matches[0].group(1)
+    # Side by side, the value is trusted only when both parties print one.
+    if len(matches) != 2:
+        return None
+    return matches[column].group(1)
 
 
 def _search_number(lines: list[str], scores: list[float | None], pattern: re.Pattern[str]) -> Candidate:
@@ -365,7 +470,9 @@ def _search_number(lines: list[str], scores: list[float | None], pattern: re.Pat
         if not match:
             continue
         value = parse_invoice_number(match.group(1))
-        return _scored(value, number_anchor(value or ""), _score_of(line, lines, scores))
+        if value is None:
+            continue
+        return _scored(value, number_anchor(value), _score_of(line, lines, scores))
     return empty()
 
 
@@ -375,28 +482,38 @@ def _search_date(lines: list[str], scores: list[float | None], pattern: re.Patte
         if not match:
             continue
         raw = match.group(1)
-        return _scored(parse_date(raw), date_anchor(raw), _score_of(line, lines, scores))
+        value = parse_date(raw)
+        if value is None:
+            continue
+        return _scored(value, date_anchor(raw), _score_of(line, lines, scores))
     return empty()
 
 
 def _search_net(lines: list[str], scores: list[float | None]) -> Candidate:
     for line in lines:
         if any(label in fold(line) for label in _NET_LABELS):
-            return _scored(parse_money(line), money_anchor(line, specific=True), _score_of(line, lines, scores))
+            value = parse_money(line)
+            if value is None:
+                continue
+            return _scored(value, money_anchor(line, specific=True), _score_of(line, lines, scores))
     return empty()
 
 
 def _search_gross(lines: list[str], scores: list[float | None]) -> Candidate:
     for line in lines:
         folded = fold(line)
-        if any(label in folded for label in _NET_LABELS):
+        if any(label in folded for label in _NET_LABELS) or "bez dph" in folded:
             continue
         specific = any(label in folded for label in _STRONG_GROSS)
         weak = any(label in folded for label in _GROSS_LABELS) or (
             folded.startswith("total") and "excl" not in folded and "subtotal" not in folded
         )
         if specific or weak:
-            return _scored(parse_money(line), money_anchor(line, specific=specific), _score_of(line, lines, scores))
+            value = parse_money(line)
+            # A table header ("... DPH Spolu") or a settled balance of zero is not the total.
+            if value is None or float(value) == 0:
+                continue
+            return _scored(value, money_anchor(line, specific=specific), _score_of(line, lines, scores))
     return empty()
 
 
@@ -413,7 +530,10 @@ def _search_subject(lines: list[str], scores: list[float | None]) -> Candidate:
 def _search_labeled_money(lines: list[str], scores: list[float | None], labels: tuple[str, ...]) -> Candidate:
     for line in lines:
         if any(label in fold(line) for label in labels):
-            return _scored(parse_money(line), money_anchor(line, specific=True), _score_of(line, lines, scores))
+            value = parse_money(line)
+            if value is None:
+                continue
+            return _scored(value, money_anchor(line, specific=True), _score_of(line, lines, scores))
     return empty()
 
 
