@@ -1,0 +1,29 @@
+{
+  "name": "Values printed below their labels",
+  "lines": [
+    "FAKTÚRA",
+    "Číslo faktúry",
+    "2026-0142",
+    "Dodávateľ",
+    "Ateliér Sever, s. r. o.",
+    "IČO",
+    "00151653",
+    "Dátum vystavenia",
+    "12.03.2026",
+    "Dátum splatnosti",
+    "26.03.2026",
+    "Spolu s DPH",
+    "1 481,47 EUR"
+  ],
+  "expected": {
+    "dodavatel.nazov": "Ateliér Sever, s. r. o.",
+    "dodavatel.ico": "00151653",
+    "dodavatel.dic": null,
+    "faktura.cislo": "2026-0142",
+    "faktura.datum_vystavenia": "12.03.2026",
+    "faktura.datum_splatnosti": "26.03.2026",
+    "faktura.suma_bez_dph": null,
+    "faktura.suma_s_dph": "1481.47"
+  },
+  "items": []
+}

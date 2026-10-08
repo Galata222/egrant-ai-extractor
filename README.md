@@ -53,6 +53,17 @@ cd backend
 .\venv\Scripts\python.exe -m pytest
 ```
 
+Scorecard:
+
+```powershell
+cd backend
+.\venv\Scripts\python.exe -m scorecard.run
+```
+
+The scorecard reads every JSON file in [backend/scorecard/cases](backend/scorecard/cases) and compares the extractor's answer with the values a person read from the document. It prints how many values were filled correctly, how many were left for a person, and how many were wrong. A blank is a safe miss. A wrong value is the failure to drive to zero, and `--fail-on-wrong` exits with 1 when there is one.
+
+To add a document, copy a case file and change it. `file` is a path inside `backend` (PDF, JPG, PNG or XLSX). `lines` can be used instead for plain text. `expected` maps each tag to its value in the form the API returns: dates as `DD.MM.YYYY`, amounts as `1234.56`. Write `null` for a value that is not printed on the document, so that an invented value is counted as wrong. `items` lists each row as `[text, amount]`.
+
 Regenerate the sample invoice:
 
 ```powershell

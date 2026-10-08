@@ -1,0 +1,39 @@
+{
+  "name": "Invoice with a column table",
+  "lines": [
+    "Faktúra č. 20260087",
+    "Dodávateľ:",
+    "TLAČIAREŇ KUBÍK s.r.o.",
+    "Hlavná 12, 040 01 Košice",
+    "IČO: 36211222",
+    "DIČ: 2020123456",
+    "IČ DPH: SK2020123456",
+    "Odberateľ:",
+    "Občianske združenie Lúč",
+    "IČO: 00151653",
+    "Dátum vystavenia: 03.09.2026",
+    "Dátum dodania: 01.09.2026",
+    "Dátum splatnosti: 17.09.2026",
+    "Variabilný symbol: 20260087",
+    "Popis Množstvo MJ Cena za MJ DPH Spolu",
+    "Tlač plagátov A2 200 ks 1,50 20 % 360,00",
+    "Grafické práce 5 hod 40,00 20 % 240,00",
+    "Základ DPH 20 %: 500,00 €",
+    "DPH 20 %: 100,00 €",
+    "Celkom k úhrade: 600,00 €"
+  ],
+  "expected": {
+    "dodavatel.nazov": "TLAČIAREŇ KUBÍK s.r.o.",
+    "dodavatel.ico": "36211222",
+    "dodavatel.dic": "SK2020123456",
+    "faktura.cislo": "20260087",
+    "faktura.datum_vystavenia": "03.09.2026",
+    "faktura.datum_splatnosti": "17.09.2026",
+    "faktura.suma_bez_dph": "500.00",
+    "faktura.suma_s_dph": "600.00"
+  },
+  "items": [
+    ["Tlač plagátov A2", "360.00"],
+    ["Grafické práce", "240.00"]
+  ]
+}
