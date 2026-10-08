@@ -49,3 +49,10 @@ def test_gross_below_net_nulls_both_totals():
     net, gross = enforce_vat(Candidate("100.00", 0.95), Candidate("90.00", 0.95))
     assert net.value is None
     assert gross.value is None
+
+
+def test_whole_amount_needs_its_currency():
+    assert parse_money("350 €") == "350.00"
+    assert parse_money("1 350,- EUR") == "1350.00"
+    assert parse_money("350") is None
+    assert parse_money("DPH 20 %") is None

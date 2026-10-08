@@ -105,3 +105,43 @@ def test_other_wordings_of_number_and_due_date():
     values = _values(["Faktúra číslo: FV-2026-11", "Splatnosť: 19. 10. 2026"])
     assert values["invoice_number"] == "FV-2026-11"
     assert values["due_date"] == "19.10.2026"
+
+
+def test_whole_euro_amounts_are_read_next_to_their_currency():
+    values = _values(["Faktúra číslo: FV-2026-11", "Položky", "Oprava lavičiek 350 €", "Spolu: 1 350,- EUR"])
+    assert values["total_gross"] == "1350.00"
+    lines = extract_fields(["FAKTÚRA", "Položky", "Oprava lavičiek 350 €", "Spolu: 350 €"]).lines
+    assert [(line.description.value, line.amount.value) for line in lines] == [("Oprava lavičiek", "350.00")]
+
+
+def test_whole_number_without_a_currency_is_not_money():
+    assert _values(["FAKTÚRA", "Spolu: 350"])["total_gross"] is None
+
+
+def test_single_vat_base_is_the_net_total():
+    values = _values(["FAKTÚRA", "Základ DPH 20 %: 500,00 €", "DPH 20 %: 100,00 €", "Celkom k úhrade: 600,00 €"])
+    assert values["total_net"] == "500.00"
+    assert values["total_gross"] == "600.00"
+
+
+def test_bases_of_two_vat_rates_are_not_taken_as_the_net_total():
+    lines = ["FAKTÚRA", "Základ DPH 20 %: 500,00 €", "Základ DPH 10 %: 200,00 €", "Spolu s DPH: 820,00 €"]
+    assert _values(lines)["total_net"] is None
+
+
+def test_printed_net_total_wins_over_the_bases_per_rate():
+    lines = ["FAKTÚRA", "Základ DPH 20 %: 500,00 €", "Základ DPH 10 %: 200,00 €", "Spolu bez DPH: 700,00 €"]
+    assert _values(lines)["total_net"] == "700.00"
+
+
+def test_number_in_the_title_is_used_when_no_label_carries_it():
+    assert _values(["FAKTÚRA 2026/015", "Dodávateľ"])["invoice_number"] == "2026/015"
+    assert _values(["FAKTÚRA 2026", "Dodávateľ"])["invoice_number"] is None
+    assert _values(["FAKTÚRA 2026/015", "Číslo faktúry: FV-7"])["invoice_number"] == "FV-7"
+
+
+def test_short_date_labels_need_a_colon():
+    values = _values(["FAKTÚRA", "Vystavená: 12.03.2026 Splatná: 26.03.2026"])
+    assert values["issue_date"] == "12.03.2026"
+    assert values["due_date"] == "26.03.2026"
+    assert _values(["FAKTÚRA", "Faktúra je splatná do 26.03.2026"])["due_date"] is None
