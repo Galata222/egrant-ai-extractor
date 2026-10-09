@@ -1,0 +1,655 @@
+{
+    "type": "root",
+    "view_custom_template": null,
+    "diff_custom_template": null,
+    "diff_style": "default",
+    "children": [
+        {
+            "type": "SECTION",
+            "name": "Predkladatel",
+            "tag": "predkladatel",
+            "heading": "Predkladateľ",
+            "children": [
+                {
+                    "type": "SUB_SECTION",
+                    "name": "Informacia",
+                    "tag": "informacia",
+                    "heading": "Z&aacute;verečn&uacute; spr&aacute;vu projektu je potrebn&eacute; odoslať do d&aacute;tumu uveden&eacute;ho v zmluve."
+                },
+                {
+                    "type": "SIMPLE_STRING",
+                    "name": "Názov predkladateľa",
+                    "tag": "predkladatel",
+                    "mandatory": true,
+                    "heading": "Predkladateľ",
+                    "source_tag": "predkladatel.info_ziadatel.ico.name",
+                    "config": {
+                        "size": 100,
+                        "is_readonly": 0
+                    }
+                },
+                {
+                    "type": "SIMPLE_STRING",
+                    "name": "Názov projektu",
+                    "tag": "nazov_projektu",
+                    "mandatory": true,
+                    "heading": "Názov projektu",
+                    "source_tag": "informacie_projekt.nazov",
+                    "config": {
+                        "size": 123,
+                        "is_readonly": 0
+                    }
+                },
+                {
+                    "type": "SIMPLE_STRING",
+                    "name": "Číslo zmluvy",
+                    "tag": "cislo_zmluvy",
+                    "heading": "Číslo zmluvy",
+                    "source_tag": "agreement_no",
+                    "config": {
+                        "is_readonly": 0
+                    }
+                },
+                {
+                    "type": "DATE",
+                    "name": "Dátum podpisu zmluvy",
+                    "tag": "podpiszmluvy",
+                    "heading": "D&aacute;tum podpisu zmluvy"
+                },
+                {
+                    "type": "SIMPLE_STRING",
+                    "name": "Vyska grantu",
+                    "tag": "grant",
+                    "heading": "V&yacute;&scaron;ka grantu",
+                    "source_tag": "granted_sum"
+                },
+                {
+                    "type": "SIMPLE_STRING",
+                    "name": "IBAN",
+                    "tag": "iban",
+                    "description": "<span style=\u0022color:#ffffff\u0022>Pozor:<\/span><br \/>\nNáklady je potrebné hradiť z účtu na, ktorý bol prijatý grant, resp. je potrebné <strong>zrealizovať prevod z účtu, na ktorý bol prijatý grant na účet, z ktorého boli náklady hradené.<\/strong>",
+                    "heading": "Číslo účtu v tvare IBAN, na ktorý bol prijatý grant z Nadácie VÚB",
+                    "source_tag": "predkladatel.iban",
+                    "config": {
+                        "is_readonly": 0
+                    }
+                },
+                {
+                    "type": "SUB_SECTION",
+                    "name": "Autor správy",
+                    "tag": "autor",
+                    "heading": "Autor spr&aacute;vy",
+                    "children": [
+                        {
+                            "type": "SIMPLE_STRING",
+                            "name": "Meno Priezvisko",
+                            "tag": "meno",
+                            "heading": "Meno Priezvisko"
+                        },
+                        {
+                            "type": "SIMPLE_STRING",
+                            "name": "Funkcia",
+                            "tag": "funkcia",
+                            "heading": "Funkcia v organiz&aacute;cii"
+                        },
+                        {
+                            "type": "SIMPLE_STRING",
+                            "name": "telefon",
+                            "tag": "telefon",
+                            "heading": "Telef&oacute;n"
+                        },
+                        {
+                            "type": "SIMPLE_STRING",
+                            "name": "Email",
+                            "tag": "email",
+                            "heading": "Email"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "SECTION",
+            "name": "Záverečná správa",
+            "tag": "zaverecnasprava",
+            "heading": "Z&aacute;verečn&aacute; spr&aacute;va",
+            "children": [
+                {
+                    "type": "TEXT",
+                    "name": "Cieľ projektu",
+                    "tag": "cielprojektu",
+                    "heading": "Cieľom projektu bolo",
+                    "config": {
+                        "is_readonly": 0
+                    }
+                },
+                {
+                    "type": "TABLE_LIST",
+                    "name": "Zrealizovane aktivity",
+                    "tag": "aktivity",
+                    "heading": "V rámci projektu boli zrealizované tieto aktivity",
+                    "config": {
+                        "initial_rows": 1,
+                        "add_rows": 1,
+                        "hide_header": 0
+                    },
+                    "children": [
+                        {
+                            "type": "TABLE_ITEM_STRING",
+                            "name": "Aktivity",
+                            "tag": "aktivity",
+                            "heading": "Aktivity",
+                            "config": {
+                                "size": 180
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "TABLE_LIST",
+                    "name": "Kvantitativne ukazovatele",
+                    "tag": "kvantitativne_ukazovatele",
+                    "description": "(<i>Napr&iacute;klad 55 &scaron;tudentov sa naučilo prakticky použ&iacute;vať software.<\/i>)",
+                    "heading": "V&yacute;stupy projektu. Uveďte kvantitat&iacute;vne ukazovatele projektu, ktor&eacute; dokazuj&uacute; jeho pr&iacute;nos.",
+                    "config": {
+                        "initial_rows": 1,
+                        "add_rows": 1,
+                        "hide_header": 0
+                    },
+                    "children": [
+                        {
+                            "type": "TABLE_ITEM_STRING",
+                            "name": "Kvantitativne",
+                            "tag": "kvantitativne",
+                            "config": {
+                                "size": 180
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "TABLE_LIST",
+                    "name": "Kvalitativne ukazovatele",
+                    "tag": "kvalitativne",
+                    "description": "(<i>Napr&iacute;klad&nbsp; miestna komunita sa začala intenz&iacute;vnej&scaron;ie zauj&iacute;mať o pr&iacute;rodn&eacute; kr&aacute;sy v okol&iacute; na&scaron;ej obce.<\/i>)",
+                    "heading": "V&yacute;stupy projektu. Uveďte kvalitat&iacute;vne ukazovatele projektu, ktor&eacute; dokazuj&uacute; jeho pr&iacute;nos.",
+                    "config": {
+                        "initial_rows": 1,
+                        "add_rows": 1,
+                        "hide_header": 0
+                    },
+                    "children": [
+                        {
+                            "type": "TABLE_ITEM_STRING",
+                            "name": "Kvalitativne",
+                            "tag": "kvalitativne_ukazovatele",
+                            "config": {
+                                "size": 180
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "FILE_LIST",
+                    "name": "Galeria",
+                    "tag": "galeria",
+                    "description": "<p><strong><span style=\u0022color:#e74c3c\u0022>Priložte maximálne 6&nbsp;kusov najlepších fotografií<\/span>,<\/strong> ktoré budú použité vo vyhodnotení programu, vo výročnej správe, v článkoch o programe na webovej stránke Nadácie VÚB, sociálnych sieťach či ďalších propagačných materiáloch Nadácie.&nbsp;<\/p>\n\n<p><strong>Najnižšia odporúčaná veľkosť fotografie je 5 000 x 5 000 px, resp. 3 Mpx (megapixel).<\/strong><\/p>\n\n<p>Prosíme vás, aby ste mali vo svojej evidencii súhlas s použitím fotografií pre ich ďalšie spracovanie na vyššie spomenuté účely.&nbsp;<\/p>",
+                    "heading": "Galéria",
+                    "config": {
+                        "disable_remove_on_reopen": 0,
+                        "hide_thumbnail_for_print": 1,
+                        "hide_name_for_print": 1,
+                        "hide_description_for_print": 1
+                    }
+                }
+            ]
+        },
+        {
+            "type": "SECTION",
+            "name": "Finančná správa",
+            "tag": "finansprava",
+            "heading": "Finančn&aacute; spr&aacute;va",
+            "children": [
+                {
+                    "type": "SUB_SECTION",
+                    "name": "Navod",
+                    "tag": "navod",
+                    "heading": "<p><strong>Záverečnú správu je potrebné&nbsp;vyplniť v elektronickej forme v systéme egrant.<\/strong><\/p>\n\n<p>&nbsp;<\/p>\n\n<p>Tu sú odporúčania pre spracovanie finančného vyúčtovania:<\/p>\n\n<ol>\n\t<li>Priložte naskenované účtovné doklady, ktoré súvisia s projektom a boli hradené&nbsp;z&nbsp;grantu Nadácie VÚB.&nbsp;Originály účtovných dokladov si ponechávate vo svojej účtovnej evidencii tak, aby mohli byť kedykoľvek prístupné kontrole.<br \/>\n\t&nbsp;<\/li>\n\t<li>Doklady o úhrade, v prípade bezhotovostnej platby, preukazujete výlučne&nbsp;<u><span style=\u0022color:#e74c3c\u0022><strong>VÝPISMI&nbsp;z účtu<\/strong><\/span><\/u> (nie detailom&nbsp;platby, nie pohybmi z Internet bankingu, nie príkazom na úhradu).<br \/>\n\t&nbsp;<\/li>\n\t<li><span style=\u0022color:#2980b9\u0022><strong>Výpisy z účtu musia byť z&nbsp;účtu, na ktorý boli poukázané prostriedky grantu.<\/strong><\/span> &nbsp;V&nbsp;prípade, že boli hradené výdavky z iného bankového účtu, tak doložte prosím bankový výpis, kde je zrealizovaný prevod medzi týmito dvoma bankovými účtami.<br \/>\n\t&nbsp;<\/li>\n\t<li>Prosíme vás, aby ste na účtovných dokladoch uviedli náklady v rovnakom znení ako v schválenom rozpočte.<br \/>\n\t&nbsp;<\/li>\n\t<li>Súčasťou finančnej správy <span style=\u0022color:#2980b9\u0022><strong>musia byť len <strong>n<\/strong>áklady s&nbsp;dátumom úhrady po dátume podpisu&nbsp;zmluvy oboma stranami do dátumu ukončenia realizácie projektu<\/strong><\/span>, ktorý je uvedený v&nbsp;zmluve.<br \/>\n\t&nbsp;<\/li>\n\t<li>Usporiadajte účtovné doklady tak, aby ku každej faktúre bol priložený aj výpis z účtu, resp. ku každému bloku z registračnej pokladne bol priložený výdavkový a príjmový doklad, ktorý musí byť podpísaný.<strong> Všetky účtovné doklady musia byť riadne vyplnené. Zmluvy musia byť podpísané zmluvnými stranami.<\/strong><br \/>\n\t&nbsp;<\/li>\n\t<li>Účtovné doklady, ktoré predkladáte, roztrieďte podľa kategórií (napr. kancelárske potreby, stavebný materiál, výtvarný materiál) – podľa toho, ako sú uvedené v schválenom rozpočte. Vpíšte jednotlivé účtovné doklady podľa kategórií do tabuľky.<br \/>\n\t&nbsp;<\/li>\n\t<li>Pokiaľ bol váš projekt financovaný aj z iných zdrojov, môžete uviesť sumu, ktorú&nbsp;ste mali z vlastných, resp. iných zdrojov. Spoluúčasť nebola povinná, nemusíte ju vydokladovať.<br \/>\n\t&nbsp;<\/li>\n\t<li>Účtovné doklady sa nesmú prekrývať&nbsp;a musia byť zreteľne čitateľné.<\/li>\n<\/ol>\n\n<p>ZÁROVEŇ VÁS PROSÍME, ABY STE VLOŽILI ZOZNAM NÁKLADOV DO&nbsp;NIŽŠIE UVEDENÝCH&nbsp;RIADKOV (riadky doplňte podľa potreby).<\/p>\n\n<p>Dodržte&nbsp;identické poradie nákladov&nbsp;ako v prípade SCHVÁLENÉHO ROZPOČTU, resp. SCHVÁLENÉHO UPRAVENÉHO ROZPOČTU.<\/p>"
+                },
+                {
+                    "type": "CURRENCY",
+                    "name": "Suma",
+                    "tag": "suma",
+                    "heading": "Suma použitá z grantu Nadácie VUB (súčet)",
+                    "source_tag": "granted_sum",
+                    "config": {
+                        "currency": "eur",
+                        "is_readonly": 0
+                    }
+                },
+                {
+                    "type": "BUDGET",
+                    "name": "Prehlad cerpania",
+                    "tag": "prehlad",
+                    "mandatory": true,
+                    "heading": "Tab. 1 Prehľad čerpania finančn&yacute;ch prostriedkov",
+                    "config": {
+                        "item_label": "Vyúčtovanie",
+                        "requested_sum_label": "Čerpaná suma z grantu",
+                        "own_sum_label": "Vlastné a iné zdroje",
+                        "hide_own_sum": 0,
+                        "hide_requested_sum": 0
+                    },
+                    "children": [
+                        {
+                            "type": "BUDGET_SECTION",
+                            "name": "Prehľad čerpania a zdrojov",
+                            "tag": "prehlad",
+                            "heading": "Prehľad čerpania a zdrojov",
+                            "source_tag": "rozpocet.rozpocet.rozpocet_polozka",
+                            "config": {
+                                "total_sum_tag": "cerpaniespolu",
+                                "requested_sum_tag": "skutocne_cerpanie",
+                                "own_sum_tag": "vlastnezdroje",
+                                "hide_section_header": 0,
+                                "min_rows": 1,
+                                "initial_rows": 1,
+                                "add_rows": 1,
+                                "hide_header": 0,
+                                "separate_rows": 0
+                            },
+                            "children": [
+                                {
+                                    "type": "TABLE_ITEM_STRING",
+                                    "name": "číslo",
+                                    "tag": "cislo",
+                                    "heading": "Číslo",
+                                    "config": {
+                                        "size": 5,
+                                        "is_readonly": 0,
+                                        "fixed_values": [
+                                            {
+                                                "value": "",
+                                                "readonly": "0"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "type": "TABLE_ITEM_STRING",
+                                    "name": "nazov polozky",
+                                    "tag": "polozka",
+                                    "heading": "Názov položky",
+                                    "config": {
+                                        "size": 65,
+                                        "is_readonly": 0,
+                                        "fixed_values": [
+                                            {
+                                                "value": "",
+                                                "readonly": "0"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "type": "TABLE_ITEM_CURRENCY",
+                                    "name": "schválena suma polozky",
+                                    "tag": "nadaciavub",
+                                    "mandatory": true,
+                                    "heading": "Schválená suma položky<br \/>\npodľa zmluvy)",
+                                    "config": {
+                                        "size": 30,
+                                        "is_readonly": 0,
+                                        "show_summary": 1
+                                    }
+                                },
+                                {
+                                    "type": "TABLE_ITEM_CURRENCY",
+                                    "name": "skutocne cerpanie",
+                                    "tag": "skutocne_cerpanie",
+                                    "mandatory": true,
+                                    "heading": "Skutočne čerpaná suma<br \/>\nz grantu Nadácie VÚB",
+                                    "config": {
+                                        "size": 25,
+                                        "currency": "EUR",
+                                        "is_readonly": 0,
+                                        "show_summary": 1
+                                    }
+                                },
+                                {
+                                    "type": "TABLE_ITEM_CURRENCY",
+                                    "name": "suma vlastnych zdrojov",
+                                    "tag": "vlastnezdroje",
+                                    "mandatory": true,
+                                    "heading": "Suma čerpaná<br \/>\nz vlastných\/ iných zdrojov",
+                                    "config": {
+                                        "size": 25,
+                                        "currency": "EUR",
+                                        "is_readonly": 0,
+                                        "show_summary": 0
+                                    }
+                                },
+                                {
+                                    "type": "TABLE_ITEM_SUM",
+                                    "name": "Čerpanie spolu",
+                                    "tag": "cerpaniespolu",
+                                    "mandatory": true,
+                                    "heading": "Čerpanie spolu",
+                                    "config": {
+                                        "tags": "skutocne_cerpanie, vlastnezdroje",
+                                        "width": "20",
+                                        "no_currency": 0,
+                                        "show_summary": 0
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "TEXT",
+                    "name": "Komentár k zúčtovaniu",
+                    "tag": "komentarkzuctovaniu",
+                    "mandatory": true,
+                    "heading": "Koment&aacute;r k z&uacute;čtovaniu"
+                },
+                {
+                    "type": "TABLE_LIST",
+                    "name": "Zoznam učtovných dokladov",
+                    "tag": "zoznamuctovnychdokladov",
+                    "mandatory": true,
+                    "description": "<span style=\u0022color:#e74c3c\u0022>Prosíme Vás aby ste v dátume úhrady uvádzali dátum kedy bol doklad uhradený (nie zaúčtovaný).<\/span><br \/>\n&nbsp;\n<p>Vzor:<\/p>\n\n<p>&nbsp;<\/p>\n\n<table cellspacing=\u00220\u0022 class=\u0022Table\u0022 style=\u0022border-collapse:collapse; margin-left:7px; width:99%\u0022>\n\t<tbody>\n\t\t<tr>\n\t\t\t<td style=\u0022background-color:#fbe4d5; border-bottom:2px double black; border-left:1px solid black; border-right:1px solid black; border-top:1px solid black; height:53px; width:8%\u0022>\n\t\t\t<p style=\u0022text-align:center\u0022><strong><span style=\u0022color:black\u0022>Položka <\/span><\/strong><strong><span style=\u0022color:black\u0022>(názov)<\/span><\/strong><\/p>\n\t\t\t<\/td>\n\t\t\t<td style=\u0022background-color:#fbe4d5; border-bottom:2px double black; border-left:none; border-right:1px solid black; border-top:1px solid black; height:53px; width:8%\u0022>\n\t\t\t<p style=\u0022text-align:center\u0022><strong><span style=\u0022color:black\u0022>Suma <\/span><\/strong><strong><span style=\u0022color:black\u0022>položky<\/span><\/strong><\/p>\n\t\t\t<\/td>\n\t\t\t<td style=\u0022background-color:#fbe4d5; border-bottom:2px double black; border-left:none; border-right:1px solid black; border-top:1px solid black; height:53px; width:16%\u0022>\n\t\t\t<p style=\u0022text-align:center\u0022><strong><span style=\u0022color:black\u0022>Číslo prvotného dokladu<\/span><\/strong><\/p>\n\t\t\t<\/td>\n\t\t\t<td style=\u0022background-color:#fbe4d5; border-bottom:2px double black; border-left:none; border-right:1px solid black; border-top:1px solid black; height:53px; vertical-align:top; width:18%\u0022>\n\t\t\t<p style=\u0022text-align:center\u0022>&nbsp;<\/p>\n\n\t\t\t<p style=\u0022text-align:center\u0022><strong><span style=\u0022color:black\u0022>Typ prvotného dokladu<\/span><\/strong><\/p>\n\t\t\t<\/td>\n\t\t\t<td style=\u0022background-color:#fbe4d5; border-bottom:2px double black; border-left:none; border-right:1px solid black; border-top:1px solid black; height:53px; vertical-align:top; width:20%\u0022>\n\t\t\t<p style=\u0022text-align:center\u0022><br \/>\n\t\t\t<strong><span style=\u0022color:black\u0022>Číslo druhotného dokladu<\/span><\/strong><\/p>\n\t\t\t<\/td>\n\t\t\t<td style=\u0022background-color:#fbe4d5; border-bottom:2px double black; border-left:none; border-right:1px solid black; border-top:1px solid black; height:53px; width:18%\u0022>\n\t\t\t<p style=\u0022text-align:center\u0022><strong><span style=\u0022color:black\u0022>Spôsob úhrady<\/span><\/strong><\/p>\n\t\t\t<\/td>\n\t\t\t<td style=\u0022background-color:#fbe4d5; border-bottom:2px double black; border-left:none; border-right:1px solid black; border-top:1px solid black; height:53px; vertical-align:top; width:8%\u0022>\n\t\t\t<p style=\u0022text-align:center\u0022>&nbsp;<\/p>\n\n\t\t\t<p style=\u0022text-align:center\u0022><strong><span style=\u0022color:black\u0022>Dátum úhrady<\/span><\/strong><\/p>\n\t\t\t<\/td>\n\t\t<\/tr>\n\t\t<tr>\n\t\t\t<td style=\u0022border-bottom:1px solid black; border-left:1px solid black; border-right:1px solid black; border-top:none; height:20px; vertical-align:bottom; width:8%\u0022>\n\t\t\t<p style=\u0022text-align:center\u0022>&nbsp;<\/p>\n\t\t\t<\/td>\n\t\t\t<td style=\u0022border-bottom:1px solid black; border-left:none; border-right:1px solid black; border-top:none; height:20px; text-align:center; vertical-align:bottom; width:8%\u0022>suma v €<\/td>\n\t\t\t<td style=\u0022border-bottom:1px solid black; border-left:none; border-right:1px solid black; border-top:none; height:20px; vertical-align:bottom; width:16%\u0022>\n\t\t\t<p style=\u0022text-align:center\u0022><span style=\u0022color:black\u0022>Číslo faktúry<\/span><\/p>\n\t\t\t<\/td>\n\t\t\t<td style=\u0022border-bottom:1px solid black; border-left:none; border-right:1px solid black; border-top:none; height:20px; vertical-align:top; width:18%\u0022>\n\t\t\t<p style=\u0022text-align:center\u0022>&nbsp;<\/p>\n\n\t\t\t<p style=\u0022text-align:center\u0022><span style=\u0022color:black\u0022>Faktúra<\/span><\/p>\n\t\t\t<\/td>\n\t\t\t<td style=\u0022border-bottom:1px solid black; border-left:none; border-right:1px solid black; border-top:none; height:20px; vertical-align:bottom; width:20%\u0022>\n\t\t\t<p style=\u0022text-align:center\u0022><span style=\u0022color:black\u0022>Číslo výpisu z&nbsp;účtu<\/span><\/p>\n\t\t\t<\/td>\n\t\t\t<td style=\u0022border-bottom:1px solid black; border-left:none; border-right:1px solid black; border-top:none; height:20px; vertical-align:bottom; width:18%\u0022>\n\t\t\t<p style=\u0022text-align:center\u0022><span style=\u0022color:black\u0022>prevodom<\/span><\/p>\n\t\t\t<\/td>\n\t\t\t<td style=\u0022border-bottom:1px solid black; border-left:none; border-right:1px solid black; border-top:none; height:20px; vertical-align:top; width:8%\u0022>\n\t\t\t<p style=\u0022text-align:center\u0022>&nbsp;<\/p>\n\n\t\t\t<p style=\u0022text-align:center\u0022><span style=\u0022color:black\u0022>dátum<\/span><\/p>\n\t\t\t<\/td>\n\t\t<\/tr>\n\t\t<tr>\n\t\t\t<td style=\u0022border-bottom:1px solid black; border-left:1px solid black; border-right:1px solid black; border-top:none; height:33px; vertical-align:bottom; width:8%\u0022>\n\t\t\t<p style=\u0022text-align:center\u0022>&nbsp;<\/p>\n\t\t\t<\/td>\n\t\t\t<td style=\u0022border-bottom:1px solid black; border-left:none; border-right:1px solid black; border-top:none; height:33px; vertical-align:bottom; width:8%\u0022>\n\t\t\t<p style=\u0022text-align:center\u0022><span style=\u0022color:black\u0022>suma v €<\/span><\/p>\n\t\t\t<\/td>\n\t\t\t<td style=\u0022border-bottom:1px solid black; border-left:none; border-right:1px solid black; border-top:none; height:33px; vertical-align:bottom; width:16%\u0022>\n\t\t\t<p style=\u0022text-align:center\u0022><span style=\u0022color:black\u0022>Číslo pokl. dokladu<\/span><\/p>\n\t\t\t<\/td>\n\t\t\t<td style=\u0022border-bottom:1px solid black; border-left:none; border-right:1px solid black; border-top:none; height:33px; vertical-align:top; width:18%\u0022>\n\t\t\t<p style=\u0022text-align:center\u0022>&nbsp;<\/p>\n\n\t\t\t<p style=\u0022text-align:center\u0022><span style=\u0022color:black\u0022>Pokladničný blok<\/span><\/p>\n\t\t\t<\/td>\n\t\t\t<td style=\u0022border-bottom:1px solid black; border-left:none; border-right:1px solid black; border-top:none; height:33px; vertical-align:bottom; width:20%\u0022>\n\t\t\t<p style=\u0022text-align:center\u0022><span style=\u0022color:black\u0022>Číslo výdavk. poklad. dokladu<\/span><\/p>\n\t\t\t<\/td>\n\t\t\t<td style=\u0022border-bottom:1px solid black; border-left:none; border-right:1px solid black; border-top:none; height:33px; vertical-align:bottom; width:18%\u0022>\n\t\t\t<p style=\u0022text-align:center\u0022><span style=\u0022color:black\u0022>v hotovosti<\/span><\/p>\n\t\t\t<\/td>\n\t\t\t<td style=\u0022border-bottom:1px solid black; border-left:none; border-right:1px solid black; border-top:none; height:33px; vertical-align:top; width:8%\u0022>\n\t\t\t<p style=\u0022text-align:center\u0022>&nbsp;<\/p>\n\n\t\t\t<p style=\u0022text-align:center\u0022><span style=\u0022color:black\u0022>dátum<\/span><\/p>\n\t\t\t<\/td>\n\t\t<\/tr>\n\t\t<tr>\n\t\t\t<td style=\u0022border-bottom:2px double black; border-left:1px solid black; border-right:1px solid black; border-top:none; height:20px; vertical-align:bottom; width:8%\u0022>\n\t\t\t<p style=\u0022text-align:center\u0022>&nbsp;<\/p>\n\t\t\t<\/td>\n\t\t\t<td style=\u0022border-bottom:2px double black; border-left:none; border-right:1px solid black; border-top:none; height:20px; vertical-align:bottom; width:8%\u0022>\n\t\t\t<p style=\u0022text-align:center\u0022><span style=\u0022color:black\u0022>0,00 €<\/span><\/p>\n\t\t\t<\/td>\n\t\t\t<td style=\u0022border-bottom:2px double black; border-left:none; border-right:1px solid black; border-top:none; height:20px; vertical-align:bottom; width:16%\u0022>\n\t\t\t<p style=\u0022text-align:center\u0022>&nbsp;<\/p>\n\t\t\t<\/td>\n\t\t\t<td style=\u0022border-bottom:2px double black; border-left:none; border-right:1px solid black; border-top:none; height:20px; vertical-align:top; width:18%\u0022>\n\t\t\t<p style=\u0022text-align:center\u0022>&nbsp;<\/p>\n\t\t\t<\/td>\n\t\t\t<td style=\u0022border-bottom:2px double black; border-left:none; border-right:1px solid black; border-top:none; height:20px; vertical-align:bottom; width:20%\u0022>\n\t\t\t<p style=\u0022text-align:center\u0022>&nbsp;<\/p>\n\t\t\t<\/td>\n\t\t\t<td style=\u0022border-bottom:2px double black; border-left:none; border-right:1px solid black; border-top:none; height:20px; vertical-align:bottom; width:18%\u0022>\n\t\t\t<p style=\u0022text-align:center\u0022>&nbsp;<\/p>\n\t\t\t<\/td>\n\t\t\t<td style=\u0022border-bottom:2px double black; border-left:none; border-right:1px solid black; border-top:none; height:20px; vertical-align:top; width:8%\u0022>\n\t\t\t<p style=\u0022text-align:center\u0022>&nbsp;<\/p>\n\t\t\t<\/td>\n\t\t<\/tr>\n\t<\/tbody>\n<\/table>",
+                    "heading": "Tab. 2: Zoznam účtovných dokladov",
+                    "config": {
+                        "add_rows": 1,
+                        "disable_remove_on_resubmit": 1,
+                        "hide_header": 0,
+                        "separate_rows": 0
+                    },
+                    "children": [
+                        {
+                            "type": "TABLE_ITEM_NUMBER",
+                            "name": "Por. č.",
+                            "tag": "p_c",
+                            "mandatory": true,
+                            "heading": "P.č.",
+                            "config": {
+                                "size": 8,
+                                "is_readonly": 0,
+                                "fixed_values": [
+                                    {
+                                        "value": "",
+                                        "readonly": "0"
+                                    },
+                                    {
+                                        "value": "",
+                                        "readonly": "0"
+                                    }
+                                ],
+                                "show_summary": 0
+                            }
+                        },
+                        {
+                            "type": "TABLE_ITEM_STRING",
+                            "name": "Položka",
+                            "tag": "polozka",
+                            "mandatory": true,
+                            "heading": "Položka",
+                            "config": {
+                                "size": 50,
+                                "is_readonly": 0,
+                                "fixed_values": [
+                                    {
+                                        "value": "",
+                                        "readonly": "0"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "TABLE_ITEM_CURRENCY",
+                            "name": "Suma",
+                            "tag": "suma",
+                            "mandatory": true,
+                            "heading": "Suma",
+                            "config": {
+                                "size": 22,
+                                "is_readonly": 0,
+                                "show_summary": 1
+                            }
+                        },
+                        {
+                            "type": "TABLE_ITEM_STRING",
+                            "name": "Cislo prvotneho dokladu",
+                            "tag": "cisloprvotnehodokladu",
+                            "mandatory": true,
+                            "heading": "Číslo prvotného dokladu",
+                            "config": {
+                                "size": 20,
+                                "is_readonly": 0,
+                                "fixed_values": [
+                                    {
+                                        "value": "",
+                                        "readonly": "0"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "TABLE_ITEM_STRING",
+                            "name": "Typ prvotného dokladu",
+                            "tag": "typprvotnehodokladu",
+                            "mandatory": true,
+                            "heading": "Typ prvotného dokladu",
+                            "hint": "(faktúra, pokladničný bloček)",
+                            "config": {
+                                "size": 30,
+                                "is_readonly": 0,
+                                "fixed_values": [
+                                    {
+                                        "value": "",
+                                        "readonly": "0"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "TABLE_ITEM_STRING",
+                            "name": "Číslo druhotného dokladu",
+                            "tag": "cislodruhotnehodokladu",
+                            "mandatory": true,
+                            "heading": "Číslo druhotného dokladu",
+                            "config": {
+                                "size": 20,
+                                "is_readonly": 0,
+                                "fixed_values": [
+                                    {
+                                        "value": "",
+                                        "readonly": "0"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "TABLE_ITEM_STRING",
+                            "name": "Spôsob uhrady ",
+                            "tag": "sposobuhrady",
+                            "mandatory": true,
+                            "heading": "Spôsob úhrady<br \/>\n(typ druhotného dokladu)",
+                            "hint": "bankový výpis,&nbsp;výdavkový pokladničný doklad",
+                            "config": {
+                                "size": 30,
+                                "is_readonly": 0,
+                                "fixed_values": [
+                                    {
+                                        "value": "",
+                                        "readonly": "0"
+                                    },
+                                    {
+                                        "value": "",
+                                        "readonly": "0"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "TABLE_ITEM_DATE",
+                            "name": "Dátum",
+                            "tag": "datum",
+                            "heading": "Dátum úhrady",
+                            "config": {
+                                "is_readonly": 0
+                            }
+                        },
+                        {
+                            "type": "TABLE_ITEM_FILE_LIST",
+                            "name": "Účtovný doklad",
+                            "tag": "uctovny_doklad",
+                            "mandatory": true,
+                            "heading": "Účtovný doklad",
+                            "config": {
+                                "disable_remove_on_reopen": 0,
+                                "hide_thumbnail_for_print": 1,
+                                "hide_name_for_print": 1,
+                                "hide_description_for_print": 1
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "SUM",
+                    "name": "Nevyčerpaná suma",
+                    "tag": "nevycerpana",
+                    "heading": "Výška nevyčerpanej sumy",
+                    "config": {
+                        "tags": "@final.finansprava.prehlad.prehlad[0].skutocne_cerpanie.sum",
+                        "sub_tags": "@final.finansprava.zoznamuctovnychdokladov[0].suma.sum"
+                    }
+                },
+                {
+                    "type": "FILE_LIST",
+                    "name": "Súhlas so zmenou rozpočtu, súhlas so zmenou termínu",
+                    "tag": "zmena",
+                    "description": "V prípade, že ste predkladali žiadosť o zmenu o rozpočtu, resp. termínu ukončenia projektu, priložte stanovisko nadácie o jej schválení.&nbsp;",
+                    "heading": "<p>Priložte súhlasné stanovisko k zmene rozpočtu, prípadne k zmene termínu ukončenia projektu.&nbsp;<\/p>\n\n<p>Ak ste nevyčerpali časť grantu, vložte oznámenie sem.<\/p>",
+                    "config": {
+                        "disable_remove_on_reopen": 0,
+                        "hide_thumbnail_for_print": 0,
+                        "hide_name_for_print": 0,
+                        "hide_description_for_print": 0
+                    }
+                }
+            ]
+        },
+        {
+            "type": "SECTION",
+            "name": "Medialne",
+            "tag": "medialne",
+            "heading": "Medi&aacute;lne v&yacute;stupy",
+            "children": [
+                {
+                    "type": "TABLE_LIST",
+                    "name": "Mediálne výstupy",
+                    "tag": "medialne",
+                    "heading": "Medi&aacute;lne v&yacute;stupy",
+                    "config": {
+                        "add_rows": 1,
+                        "hide_header": 0
+                    },
+                    "children": [
+                        {
+                            "type": "TABLE_ITEM_STRING",
+                            "name": "Nazov media",
+                            "tag": "medium",
+                            "heading": "N&aacute;zov m&eacute;dia"
+                        },
+                        {
+                            "type": "TABLE_ITEM_STRING",
+                            "name": "Datum\/ obdobie",
+                            "tag": "datum",
+                            "heading": "D&aacute;tum\/ obdobie"
+                        },
+                        {
+                            "type": "TABLE_ITEM_STRING",
+                            "name": "Charakter výstupov",
+                            "tag": "charakter_vystupov",
+                            "description": "(interview, čl&aacute;nok, oznam v miestnom rozhlase, atď.)<br \/>\n<br \/>",
+                            "heading": "Charakter v&yacute;stupov"
+                        },
+                        {
+                            "type": "TABLE_ITEM_STRING",
+                            "name": "Spomenutá nadácia",
+                            "tag": "spomenuta_nadacia",
+                            "heading": "Vo v&yacute;stupe bola spomenut&aacute; Nad&aacute;cia V&Uacute;B (Ak &aacute;no, použite označenie X.)"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "SECTION",
+            "name": "Galéria",
+            "tag": "galeria",
+            "heading": "Gal&eacute;ria",
+            "children": [
+                {
+                    "type": "FILE_LIST",
+                    "name": "Fotografie",
+                    "tag": "fotografie",
+                    "heading": "<p><strong>Fotografie dokumentujúce priebeh projekt<\/strong><\/p>",
+                    "config": {
+                        "min_files": 1,
+                        "max_files": 7,
+                        "disable_remove_on_reopen": 0,
+                        "hide_thumbnail_for_print": 1,
+                        "hide_name_for_print": 1,
+                        "hide_description_for_print": 1
+                    }
+                },
+                {
+                    "type": "FILE_LIST",
+                    "name": "Mediálne výstupy",
+                    "tag": "medialne_vystupy",
+                    "description": "Poteší nás, ak sa s nami podelíte o textové správy či iné mediálne výstupy alebo propagačné materiály, v ktorých sa hovorí o Vašich aktivitách prepojených na podporu v rámci Strategických partnerstiev Nadácie SLSP.&nbsp;",
+                    "heading": "Mediálne výstupy",
+                    "config": {
+                        "disable_remove_on_reopen": 0,
+                        "hide_thumbnail_for_print": 1,
+                        "hide_name_for_print": 1,
+                        "hide_description_for_print": 1,
+                        "show_created_time": 0
+                    }
+                },
+                {
+                    "type": "TABLE_LIST",
+                    "name": "web",
+                    "tag": "web",
+                    "heading": "Uveďte zauj&iacute;mav&eacute; linky na web str&aacute;nky s&uacute;visiace s realiz&aacute;ciou projektu alebo v&yacute;stupmi.",
+                    "config": {
+                        "initial_rows": 1,
+                        "add_rows": 1,
+                        "hide_header": 0
+                    },
+                    "children": [
+                        {
+                            "type": "TABLE_ITEM_STRING",
+                            "name": "web1",
+                            "tag": "web1",
+                            "heading": "Uveďte zaujímavé linky na web stránky súvisiace s realizáciou projektu alebo výstupmi.",
+                            "config": {
+                                "size": 90,
+                                "is_readonly": 0,
+                                "fixed_values": [
+                                    {
+                                        "value": "",
+                                        "readonly": "0"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

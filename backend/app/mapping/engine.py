@@ -3,7 +3,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from app.gate import Candidate, apply_threshold, empty
-from app.mapping.form_export import FormField, Mapping
+from app.mapping.form_export import FormField, Mapping, find_field
 from app.ocr_extract import Draft
 from app.schemas import ExtractionResponse, Item, Root, Section, TagValue, Tree
 
@@ -105,12 +105,11 @@ def _from_mapping(
     document_id: str,
     mapping: Mapping,
 ) -> ExtractionResponse | None:
-    by_tag = {item.tag: item for item in mapping.catalog}
     section_order: list[str] = []
     buckets: dict[str, list[tuple[str, str, FormField | None]]] = {}
     titles: dict[str, str] = {}
     for key, tag in mapping.fields.items():
-        meta = by_tag.get(tag)
+        meta = find_field(mapping.catalog, tag)
         if meta is not None and meta.table_tag:
             continue
         section_id = meta.section_tag if meta is not None else "formular"
@@ -149,8 +148,8 @@ def _from_mapping(
     description_tag = mapping.lines.get("description")
     amount_tag = mapping.lines.get("amount")
     if description_tag and amount_tag:
-        desc_meta = by_tag.get(description_tag)
-        amount_meta = by_tag.get(amount_tag)
+        desc_meta = find_field(mapping.catalog, description_tag)
+        amount_meta = find_field(mapping.catalog, amount_tag)
         if desc_meta is not None and desc_meta.table_tag:
             section_id = desc_meta.table_tag
             title = desc_meta.table_name or "Položky"
