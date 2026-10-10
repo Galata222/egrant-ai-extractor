@@ -18,8 +18,7 @@ def test_ico_checksum_uses_every_weight():
     assert parse_ico("36211222") == "36211222"
 
 
-def test_dic_accepts_slovak_and_other_vat_ids()
-    
+def test_dic_accepts_slovak_and_other_vat_ids():
     assert parse_dic("sk 1020215534") == "SK1020215534"
     assert parse_dic("SK102021553") is None
     assert parse_dic("1020215534") is None
