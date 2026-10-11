@@ -27,10 +27,11 @@ _COUNTERPARTY = re.compile(
 )
 _STATEMENT_AMOUNT = ("suma", "ciastka", "transaction amount", "amount")
 _ISSUE = re.compile(
-    r"(?i)(?:d[áa]tum\s+(?:vystavenia|vyhotovenia)|issue\s+date|date\s+of\s+issue|invoice\s+date|date\s+issued)\s*[:.]?\s*(.+)$"
+    r"(?i)(?:d[áa]tum\s+(?:vystavenia|vyhotovenia)|vystaven[áaée](?=\s*:)|"
+    r"issue\s+date|date\s+of\s+issue|invoice\s+date|date\s+issued)\s*[:.]?\s*(.+)$"
 )
 _DUE = re.compile(
-    r"(?i)(?:d[áa]tum\s+splatnosti|splatnos[ťt](?=\s*:)|due\s+date|payment\s+due|date\s+due)\s*[:.]?\s*(.+)$"
+    r"(?i)(?:d[áa]tum\s+splatnosti|splatnos[ťt](?=\s*:)|splatn[áaée](?=\s*:)|due\s+date|payment\s+due|date\s+due)\s*[:.]?\s*(.+)$"
 )
 _INVOICE = re.compile(
     r"(?i)(?:č[íi]slo\s+fakt[úu]ry|fakt[úu]ra\s+č[íi]slo|fakt[úu]ra\s*č\.?|variabiln[ýy]\s+symbol|"
@@ -61,12 +62,18 @@ _DIC = re.compile(
 )
 _ITEM_AMOUNT = r"(?:\d{1,3}(?:[ ,]\d{3})*[.,]\d{2}|\d+[.,]\d{2})"
 _ITEM = re.compile(
-    rf"^(?P<name>.+?)\s+(?P<amount>{_ITEM_AMOUNT})\s*(?:eur|usd|gbp|€|\$|£)?\s*$",
+    rf"^(?P<name>.+?)\s+(?P<amount>{_ITEM_AMOUNT}|(?:\d{{1,3}}(?: \d{{3}})+|\d+)(?:,-)?\s*(?:eur|€))"
+    r"\s*(?:eur|usd|gbp|€|\$|£)?\s*$",
     re.IGNORECASE,
 )
+# A title such as "FAKTÚRA 2026/015" carries the number when no label does.
+_INVOICE_TITLE = re.compile(r"(?i)^fakt[úu]ra\s+(?:č\.?\s*)?([A-Za-z0-9][A-Za-z0-9/\-]{4,39})$")
 _SUPPLIER_SPLIT = re.compile(r"(?i)(?:dod[áa]vate[ľl]|supplier|vendor|seller)\s*:\s*")
+# One line per VAT rate. It is the net total only when the document prints one rate.
+_NET_PER_RATE = ("zaklad dane", "zaklad dph")
 _NET_LABELS = (
     "zaklad dane",
+    "zaklad dph",
     "suma bez dph",
     "celkom bez dph",
     "spolu bez dph",
@@ -348,7 +355,7 @@ def _extract_invoice(lines: list[str], scores: list[float | None], kind: str) ->
             "supplier_name": _supplier_name(supplier, scores, lines),
             "ico": _anchored_ico(supplier, scores, lines),
             "dic": _anchored_dic(supplier, scores, lines),
-            "invoice_number": _search_number(lines, scores, _INVOICE),
+            "invoice_number": _invoice_number(lines, scores),
             "issue_date": _search_date(lines, scores, _ISSUE),
             "due_date": _search_date(lines, scores, _DUE),
             "total_net": _search_net(lines, scores),
@@ -489,14 +496,31 @@ def _search_date(lines: list[str], scores: list[float | None], pattern: re.Patte
     return empty()
 
 
+def _invoice_number(lines: list[str], scores: list[float | None]) -> Candidate:
+    labelled = _search_number(lines, scores, _INVOICE)
+    if labelled.value is not None:
+        return labelled
+    return _search_number(lines[:3], scores, _INVOICE_TITLE)
+
+
 def _search_net(lines: list[str], scores: list[float | None]) -> Candidate:
+    per_rate: list[tuple[str, str]] = []
     for line in lines:
-        if any(label in fold(line) for label in _NET_LABELS):
-            value = parse_money(line)
-            if value is None:
-                continue
-            return _scored(value, money_anchor(line, specific=True), _score_of(line, lines, scores))
-    return empty()
+        folded = fold(line)
+        if not any(label in folded for label in _NET_LABELS):
+            continue
+        value = parse_money(re.sub(r"\d+(?:[.,]\d+)?\s*%", " ", line))
+        if value is None:
+            continue
+        if any(label in folded for label in _NET_PER_RATE):
+            per_rate.append((value, line))
+            continue
+        return _scored(value, money_anchor(line, specific=True), _score_of(line, lines, scores))
+    # Several rates give several bases. Their sum is not printed, so nothing is returned.
+    if len({value for value, _line in per_rate}) != 1:
+        return empty()
+    value, line = per_rate[0]
+    return _scored(value, money_anchor(line, specific=True), _score_of(line, lines, scores))
 
 
 def _search_gross(lines: list[str], scores: list[float | None]) -> Candidate:

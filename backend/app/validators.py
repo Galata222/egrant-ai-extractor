@@ -53,6 +53,9 @@ _MONTHS = {
 }
 
 
+_WHOLE_AMOUNT = re.compile(r"(?i)(?<![\d.,])(\d{1,3}(?: \d{3})+|\d+)(?:,-)?\s*(?:€|eur\b)")
+
+
 def fold(text: str) -> str:
     decomposed = unicodedata.normalize("NFD", text)
     stripped = "".join(ch for ch in decomposed if unicodedata.category(ch) != "Mn")
@@ -117,12 +120,15 @@ def parse_date(raw: str | None) -> str | None:
 def parse_money(raw: str | None) -> str | None:
     if not raw:
         return None
-    text = raw.replace("\u00a0", " ").replace("\u202f", " ")
-    text = re.sub(r"(?i)\b(?:eur|usd|gbp|czk)\b|[€$£]", " ", text)
+    spaced = raw.replace("\u00a0", " ").replace("\u202f", " ")
+    text = re.sub(r"(?i)\b(?:eur|usd|gbp|czk)\b|[€$£]", " ", spaced)
     match = re.search(
         r"(\d{1,3}(?:[ .]\d{3})+(?:[.,]\d{2})|\d{1,3}(?:,\d{3})+(?:\.\d{2})|\d+[.,]\d{2})",
         text,
     )
+    if not match:
+        # "350 €" and "350,- €": a whole amount counts only next to its currency.
+        match = _WHOLE_AMOUNT.search(spaced)
     if not match:
         return None
     token = match.group(1).replace(" ", "")

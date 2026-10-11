@@ -1,0 +1,27 @@
+{
+  "name": "Sole trader, whole-euro amounts",
+  "lines": [
+    "Faktúra číslo: FV-2026-11",
+    "Dodávateľ: Ján Novák - STOLÁR",
+    "IČO: 36211222",
+    "Nie som platiteľ DPH",
+    "Dátum vyhotovenia: 5. 10. 2026",
+    "Splatnosť: 19. 10. 2026",
+    "Položky",
+    "Oprava lavičiek 350 €",
+    "Spolu: 350 €"
+  ],
+  "expected": {
+    "dodavatel.nazov": "Ján Novák - STOLÁR",
+    "dodavatel.ico": "36211222",
+    "dodavatel.dic": null,
+    "faktura.cislo": "FV-2026-11",
+    "faktura.datum_vystavenia": "05.10.2026",
+    "faktura.datum_splatnosti": "19.10.2026",
+    "faktura.suma_bez_dph": null,
+    "faktura.suma_s_dph": "350.00"
+  },
+  "items": [
+    ["Oprava lavičiek", "350.00"]
+  ]
+}

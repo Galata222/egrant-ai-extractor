@@ -1,0 +1,22 @@
+{
+  "name": "Supplier and customer side by side",
+  "lines": [
+    "FAKTÚRA 2026/015",
+    "Dodávateľ Odberateľ",
+    "Ateliér Sever, s. r. o. Obec Revúca",
+    "IČO: 00151653 IČO: 00318574",
+    "Vystavená: 12.03.2026 Splatná: 26.03.2026",
+    "Suma na úhradu 1 481,47 EUR"
+  ],
+  "expected": {
+    "dodavatel.nazov": "Ateliér Sever, s. r. o.",
+    "dodavatel.ico": "00151653",
+    "dodavatel.dic": null,
+    "faktura.cislo": "2026/015",
+    "faktura.datum_vystavenia": "12.03.2026",
+    "faktura.datum_splatnosti": "26.03.2026",
+    "faktura.suma_bez_dph": null,
+    "faktura.suma_s_dph": "1481.47"
+  },
+  "items": []
+}
