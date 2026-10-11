@@ -1,8 +1,13 @@
 import logging
 
+from app.envfile import load_local_env
+
+load_local_env()
+
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.agent import AgentAnswer, AgentStart, AgentTurn, answer_session, start_session
 from app.ingest import IngestError
 from app.mapping.form_export import parse_mapping
 from app.pipeline import extract_document
@@ -43,3 +48,18 @@ async def extract(
     except Exception as exc:
         logger.exception("extract failed")
         raise HTTPException(status_code=500, detail={"code": "extract_failed"}) from exc
+
+
+@app.post("/agent/start", response_model=AgentTurn)
+def agent_start(body: AgentStart) -> AgentTurn:
+    return start_session(body.document_id, body.tree)
+
+
+@app.post("/agent/answer", response_model=AgentTurn)
+def agent_answer(body: AgentAnswer) -> AgentTurn:
+    try:
+        return answer_session(body.session_id, body.section_id, body.item_id, body.tag, body.value)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail={"code": "agent_session"}) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail={"code": str(exc)}) from exc

@@ -1,10 +1,11 @@
 "use client";
 
+import { AgentPanel } from "@/components/agent-panel";
 import { ConfirmPanel } from "@/components/confirm-panel";
 import { DocumentPane } from "@/components/document-pane";
 import { EgrantForm } from "@/components/egrant-form";
 import { useCopy } from "@/lib/locale";
-import type { ConfirmedFill, Tree } from "@/lib/types";
+import type { AgentTurn, ConfirmedFill, Tree } from "@/lib/types";
 
 type VerificationDeskProps = {
   file: File;
@@ -23,6 +24,12 @@ type VerificationDeskProps = {
   onReset: () => void;
   onCopy: () => void;
   onDownload: () => void;
+  agent: AgentTurn | null;
+  agentBusy: boolean;
+  agentValue: string;
+  agentError: string | null;
+  onAgentValue: (value: string) => void;
+  onAgentSend: () => void;
 };
 
 export function VerificationDesk(props: VerificationDeskProps) {
@@ -59,9 +66,6 @@ export function VerificationDesk(props: VerificationDeskProps) {
           )}
         </div>
       </div>
-      {disabled && !props.confirmed ? (
-        <p className="mt-4 text-sm text-warn">{copy.missingCount(props.blocked.length)}</p>
-      ) : null}
 
       <div className="mt-10 overflow-hidden rounded-[28px] border border-line bg-line lg:grid lg:grid-cols-2">
         <div className="bg-card lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:overflow-auto">
@@ -75,8 +79,19 @@ export function VerificationDesk(props: VerificationDeskProps) {
           }}
         >
           <h2 className="display text-3xl">{copy.form}</h2>
+          {props.confirmed ? null : (
+            <AgentPanel
+              turn={props.agent}
+              busy={props.agentBusy}
+              value={props.agentValue}
+              error={props.agentError}
+              onValue={props.onAgentValue}
+              onSend={props.onAgentSend}
+            />
+          )}
           <EgrantForm
             tree={props.tree}
+            focus={props.agent?.focus ?? null}
             onChange={props.onChange}
             onAddItem={props.onAddItem}
             onRemoveItem={props.onRemoveItem}

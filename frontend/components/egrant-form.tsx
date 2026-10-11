@@ -3,17 +3,18 @@
 import { useCopy } from "@/lib/locale";
 import { fieldNeedsAttention } from "@/lib/export";
 import { isLineSection } from "@/lib/tree";
-import type { TagValue, Tree } from "@/lib/types";
+import type { AgentField, TagValue, Tree } from "@/lib/types";
 import { WarningIcon } from "@/components/warning-icon";
 
 type EgrantFormProps = {
   tree: Tree;
+  focus: AgentField | null;
   onChange: (sectionId: string, itemId: string, tag: string, value: string) => void;
   onAddItem: () => void;
   onRemoveItem: (itemId: string) => void;
 };
 
-export function EgrantForm({ tree, onChange, onAddItem, onRemoveItem }: EgrantFormProps) {
+export function EgrantForm({ tree, focus, onChange, onAddItem, onRemoveItem }: EgrantFormProps) {
   const copy = useCopy();
   return (
     <div className="flex flex-col">
@@ -30,6 +31,7 @@ export function EgrantForm({ tree, onChange, onAddItem, onRemoveItem }: EgrantFo
               <LineItemTable
                 sectionId={section.id}
                 items={section.items}
+                focus={focus}
                 onChange={onChange}
                 onRemoveItem={onRemoveItem}
               />
@@ -52,6 +54,7 @@ export function EgrantForm({ tree, onChange, onAddItem, onRemoveItem }: EgrantFo
                   tag={tag}
                   inputId={`${section.id}-${tag.tag}`}
                   labelled
+                  focused={isAgentFocus(focus, section.id, section.items[0].id, tag.tag)}
                   onChange={(value) => onChange(section.id, section.items[0].id, tag.tag, value)}
                 />
               ))}
@@ -66,11 +69,13 @@ export function EgrantForm({ tree, onChange, onAddItem, onRemoveItem }: EgrantFo
 function LineItemTable({
   sectionId,
   items,
+  focus,
   onChange,
   onRemoveItem,
 }: {
   sectionId: string;
   items: Tree["roots"][number]["sections"][number]["items"];
+  focus: AgentField | null;
   onChange: EgrantFormProps["onChange"];
   onRemoveItem: EgrantFormProps["onRemoveItem"];
 }) {
@@ -111,6 +116,7 @@ function LineItemTable({
                       tag={description}
                       sibling={amount}
                       inputId={`${item.id}-${description.tag}`}
+                      focused={isAgentFocus(focus, sectionId, item.id, description.tag)}
                       onChange={(value) => onChange(sectionId, item.id, description.tag, value)}
                     />
                   ) : null}
@@ -121,6 +127,7 @@ function LineItemTable({
                       tag={amount}
                       sibling={description}
                       inputId={`${item.id}-${amount.tag}`}
+                      focused={isAgentFocus(focus, sectionId, item.id, amount.tag)}
                       onChange={(value) => onChange(sectionId, item.id, amount.tag, value)}
                     />
                   ) : null}
@@ -167,17 +174,23 @@ function fileLabel(value: string | null): string {
   return match?.[1] ?? value;
 }
 
+function isAgentFocus(focus: AgentField | null, sectionId: string, itemId: string, tag: string) {
+  return focus?.section_id === sectionId && focus.item_id === itemId && focus.tag === tag;
+}
+
 function TagInput({
   tag,
   sibling,
   inputId,
   labelled = false,
+  focused = false,
   onChange,
 }: {
   tag: TagValue;
   sibling?: TagValue;
   inputId: string;
   labelled?: boolean;
+  focused?: boolean;
   onChange: (value: string) => void;
 }) {
   const copy = useCopy();
@@ -201,9 +214,10 @@ function TagInput({
         onChange={(event) => onChange(event.target.value)}
         aria-invalid={attention}
         aria-describedby={attention ? hintId : undefined}
+        data-agent-focus={focused ? "true" : undefined}
         className={`h-12 w-full min-w-36 rounded-2xl px-4 text-base text-ink transition duration-200 ${
           attention ? "border-2 border-warn bg-warn-bg" : "border border-transparent bg-soft"
-        }`}
+        } ${focused ? "ring-2 ring-ink ring-offset-2 ring-offset-canvas" : ""}`}
       />
       {attention ? (
         <p id={hintId} className="mt-1 flex gap-1 text-sm text-warn">

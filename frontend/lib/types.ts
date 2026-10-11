@@ -28,6 +28,23 @@ export type Tree = {
   roots: Root[];
 };
 
+export type AgentField = {
+  section_id: string;
+  item_id: string;
+  tag: string;
+  label: string;
+};
+
+export type AgentTurn = {
+  session_id: string;
+  status: "waiting" | "ready" | "failed";
+  decider: "model" | "rules";
+  code: "ask_reviewer" | "ready_to_confirm" | "agent_failed";
+  focus: AgentField | null;
+  missing_count: number;
+  missing: AgentField[];
+};
+
 export type ExtractionResponse = {
   document_id: string;
   needs_review: string[];

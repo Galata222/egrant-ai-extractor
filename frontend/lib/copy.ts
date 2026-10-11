@@ -57,6 +57,16 @@ type Copy = {
   mappingReady: string;
   canonical: Record<string, string>;
   lineFields: Record<string, string>;
+  agentTitle: string;
+  agentWorking: string;
+  agentWorkingTitle: string;
+  agentAsk: string;
+  agentFromDocument: string;
+  agentReady: string;
+  agentReadyTitle: string;
+  agentRules: string;
+  agentSend: string;
+  agentFailed: string;
 };
 
 const tagsSk: Record<string, string> = {
@@ -121,6 +131,9 @@ const errorsSk: Record<string, string> = {
   extract_failed: "Extrakciu sa nepodarilo dokončiť.",
   sample_failed: "Ukážkovú faktúru sa nepodarilo načítať.",
   invalid_mapping: "Mapovanie formulára nie je platný JSON.",
+  empty_value: "Najprv doplňte údaj, ktorý agent pýta.",
+  wrong_field: "Agent čaká na iný údaj.",
+  agent_session: "Relácia agenta už nie je otvorená.",
 };
 
 const errorsEn: Record<string, string> = {
@@ -133,6 +146,9 @@ const errorsEn: Record<string, string> = {
   extract_failed: "Extraction could not be completed.",
   sample_failed: "The sample invoice could not be loaded.",
   invalid_mapping: "The form mapping is not valid JSON.",
+  empty_value: "Fill in the field the agent asked for first.",
+  wrong_field: "The agent is waiting for a different field.",
+  agent_session: "The agent session is no longer open.",
 };
 
 const dictionaries: Record<Lang, Copy> = {
@@ -232,6 +248,16 @@ const dictionaries: Record<Lang, Copy> = {
       invoice_file: "Súbor faktúry",
       file_id: "ID súboru",
     },
+    agentTitle: "Agent",
+    agentWorking: "Agent vyberá ďalší krok.",
+    agentWorkingTitle: "Vyberá ďalší krok",
+    agentAsk: "Doplňte údaj „{label}“. Agent ho sám nenapíše.",
+    agentFromDocument: "Agent tento údaj nenapíše. Odpíšte ho z dokladu.",
+    agentReady: "Povinné údaje sú doplnené. Potvrďte, keď doklad sedí.",
+    agentReadyTitle: "Môžete potvrdiť",
+    agentRules: "Kľúč modelu nie je nastavený, preto agent ide v pevnom poradí.",
+    agentSend: "Odoslať tento údaj",
+    agentFailed: "Agent nevedel vybrať ďalší krok. Formulár môžete doplniť aj tak.",
   },
   en: {
     brand: "eGrant",
@@ -329,6 +355,16 @@ const dictionaries: Record<Lang, Copy> = {
       invoice_file: "Invoice file",
       file_id: "File id",
     },
+    agentTitle: "Agent",
+    agentWorking: "The agent is choosing the next step.",
+    agentWorkingTitle: "Choosing the next step",
+    agentAsk: "Fill in “{label}”. The agent will not type it.",
+    agentFromDocument: "The agent will not type this. Copy it from the document.",
+    agentReady: "The required fields are filled. Confirm when the document looks right.",
+    agentReadyTitle: "Ready to confirm",
+    agentRules: "No model key is set, so the agent follows a fixed order.",
+    agentSend: "Send this value",
+    agentFailed: "The agent could not choose a next step. You can still complete the form.",
   },
 };
 

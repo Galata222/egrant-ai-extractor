@@ -5,12 +5,13 @@ import { MappingPanel } from "@/components/mapping-panel";
 import { UploadPanel } from "@/components/upload-panel";
 import { VerificationDesk } from "@/components/verification-desk";
 import { extractFile, validateFile } from "@/lib/api";
+import { answerAgent, FAILED_AGENT, startAgent, tagValue } from "@/lib/agent";
 import { EMPTY_MAPPING, loadMapping, mappingPayload, saveMapping, type StoredMapping } from "@/lib/form-export";
 import { SiteHeader } from "@/components/site-header";
 import { useCopy } from "@/lib/locale";
 import { blockers, toConfirmed } from "@/lib/export";
 import { addLineItem, removeLineItem, updateTagValue } from "@/lib/tree";
-import type { ConfirmedFill, Tree } from "@/lib/types";
+import type { AgentTurn, ConfirmedFill, Tree } from "@/lib/types";
 
 type Phase = "upload" | "loading" | "review";
 
@@ -21,6 +22,7 @@ export function ExtractorApp({ embed }: { embed: boolean }) {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const previewUrlRef = useRef<string | null>(null);
+  const treeRef = useRef<Tree | null>(null);
   const [documentId, setDocumentId] = useState<string | null>(null);
   const [pagePreview, setPagePreview] = useState<string | null>(null);
   const [tree, setTree] = useState<Tree | null>(null);
@@ -31,6 +33,10 @@ export function ExtractorApp({ embed }: { embed: boolean }) {
   const [mapping, setMapping] = useState<StoredMapping>(EMPTY_MAPPING);
   const [mappingOpen, setMappingOpen] = useState(false);
   const [staged, setStaged] = useState<File | null>(null);
+  const [agent, setAgent] = useState<AgentTurn | null>(null);
+  const [agentBusy, setAgentBusy] = useState(false);
+  const [agentError, setAgentError] = useState<string | null>(null);
+  const [reviewKey, setReviewKey] = useState(0);
 
   useEffect(() => {
     setMapping(loadMapping());
@@ -41,6 +47,30 @@ export function ExtractorApp({ embed }: { embed: boolean }) {
       if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (reviewKey === 0 || !documentId) return;
+    const snapshot = treeRef.current;
+    if (!snapshot) return;
+    const id = documentId;
+    let cancel = false;
+    setAgent(null);
+    setAgentError(null);
+    setAgentBusy(true);
+    startAgent(id, snapshot)
+      .then((turn) => {
+        if (!cancel) setAgent(turn);
+      })
+      .catch(() => {
+        if (!cancel) setAgent(FAILED_AGENT);
+      })
+      .finally(() => {
+        if (!cancel) setAgentBusy(false);
+      });
+    return () => {
+      cancel = true;
+    };
+  }, [reviewKey, documentId]);
 
   function rememberFile(next: File | null) {
     if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
@@ -79,11 +109,14 @@ export function ExtractorApp({ embed }: { embed: boolean }) {
       const result = await extractFile(next, mappingPayload(mapping));
       setDocumentId(result.document_id);
       setPagePreview(result.page_preview);
-      setTree(structuredClone(result.tree));
+      treeRef.current = structuredClone(result.tree);
+      setTree(treeRef.current);
       setDocumentKind(result.document_kind || "invoice");
+      setReviewKey((key) => key + 1);
       setPhase("review");
     } catch (reason) {
       rememberFile(null);
+      treeRef.current = null;
       setTree(null);
       setDocumentKind("invoice");
       setError(reason instanceof Error ? (copy.errors[reason.message] ?? reason.message) : copy.errors.extract_failed);
@@ -106,6 +139,7 @@ export function ExtractorApp({ embed }: { embed: boolean }) {
   function reset() {
     setPhase("upload");
     rememberFile(null);
+    treeRef.current = null;
     setTree(null);
     setDocumentKind("invoice");
     setDocumentId(null);
@@ -115,8 +149,37 @@ export function ExtractorApp({ embed }: { embed: boolean }) {
     setPosted(false);
     setError(null);
     setStaged(null);
+    setAgent(null);
+    setAgentError(null);
+    setAgentBusy(false);
   }
 
+  function onFieldChange(sectionId: string, itemId: string, tag: string, value: string) {
+    setTree((current) => {
+      const next = current ? updateTagValue(current, sectionId, itemId, tag, value) : current;
+      treeRef.current = next;
+      return next;
+    });
+    setConfirmed(null);
+  }
+
+  async function sendAgentValue() {
+    const current = treeRef.current;
+    if (!agent?.focus || !agent.session_id || !current) return;
+    const value = tagValue(current, agent.focus);
+    if (!value.trim()) return;
+    setAgentBusy(true);
+    setAgentError(null);
+    try {
+      const turn = await answerAgent({ sessionId: agent.session_id, field: agent.focus, value });
+      setAgent(turn);
+    } catch (reason) {
+      const code = reason instanceof Error ? reason.message : "agent_failed";
+      setAgentError(copy.errors[code] ?? copy.agentFailed);
+    } finally {
+      setAgentBusy(false);
+    }
+  }
   function confirm() {
     if (!tree || !documentId) return;
     const payload = toConfirmed(tree, documentId, new Date().toISOString());
@@ -194,22 +257,38 @@ export function ExtractorApp({ embed }: { embed: boolean }) {
             blocked={blockers(tree)}
             confirmed={confirmed}
             copied={copied}
-            onChange={(sectionId, itemId, tag, value) => {
-              setTree((current) => (current ? updateTagValue(current, sectionId, itemId, tag, value) : current));
-              setConfirmed(null);
-            }}
+            onChange={onFieldChange}
             onAddItem={() => {
-              setTree((current) => (current ? addLineItem(current) : current));
+              setTree((current) => {
+                const next = current ? addLineItem(current) : current;
+                treeRef.current = next;
+                return next;
+              });
               setConfirmed(null);
             }}
             onRemoveItem={(itemId) => {
-              setTree((current) => (current ? removeLineItem(current, itemId) : current));
+              setTree((current) => {
+                const next = current ? removeLineItem(current, itemId) : current;
+                treeRef.current = next;
+                return next;
+              });
               setConfirmed(null);
             }}
             onConfirm={confirm}
             onReset={reset}
             onCopy={copyJson}
             onDownload={downloadJson}
+            agent={agent}
+            agentBusy={agentBusy}
+            agentValue={agent?.focus ? tagValue(tree, agent.focus) : ""}
+            agentError={agentError}
+            onAgentValue={(value) => {
+              if (!agent?.focus) return;
+              onFieldChange(agent.focus.section_id, agent.focus.item_id, agent.focus.tag, value);
+            }}
+            onAgentSend={() => {
+              void sendAgentValue();
+            }}
           />
         ) : null}
       </main>
