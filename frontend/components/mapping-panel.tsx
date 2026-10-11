@@ -81,7 +81,7 @@ export function MappingPanel({ value, onChange }: MappingPanelProps) {
               >
                 <option value="">{copy.mappingNone}</option>
                 {scalars.map((field) => (
-                  <option key={field.tag} value={field.tag}>
+                  <option key={field.path} value={field.path}>
                     {field.sectionName} / {field.name}
                   </option>
                 ))}
@@ -106,7 +106,7 @@ export function MappingPanel({ value, onChange }: MappingPanelProps) {
                 >
                   <option value="">{copy.mappingNone}</option>
                   {columns.map((field) => (
-                    <option key={`${field.tableTag}-${field.tag}`} value={field.tag}>
+                    <option key={field.path} value={field.path}>
                       {field.tableName} / {field.name}
                     </option>
                   ))}

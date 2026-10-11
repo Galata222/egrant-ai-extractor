@@ -1,10 +1,21 @@
+import json
+from pathlib import Path
+
 import pytest
 
 from app.egrant_ocr import text_from_body
 from app.gate import Candidate
-from app.mapping.form_export import parse_mapping, read_form
-from app.ocr_extract import Draft
+from app.mapping.engine import to_response
+from app.mapping.form_export import find_field, parse_mapping, read_form
+from app.ocr_extract import Draft, extract_fields
 from app.pipeline import fill_gaps
+from fixtures.invoice_text import LINES
+
+# The final report form copied from the hackathon instance with "Kopírovať celý formulár".
+FINAL_REPORT = json.loads(
+    (Path(__file__).resolve().parent.parent / "fixtures" / "final-report-form.json").read_text(encoding="utf-8")
+)
+DOCUMENTS = "finansprava.zoznamuctovnychdokladov"
 
 
 def test_form_export_collects_tags_and_marks_table_columns():
@@ -71,3 +82,45 @@ def test_empty_secondary_does_not_erase_a_checked_value():
     primary = Draft(fields={"ico": Candidate("00151653", 0.97)}, kind="invoice")
     secondary = Draft(fields={"ico": Candidate(None, 0)}, kind="invoice")
     assert fill_gaps(primary, secondary, 0.8).fields["ico"].value == "00151653"
+
+
+def test_real_export_reads_fields_inside_a_sub_section():
+    fields = read_form(FINAL_REPORT)
+    author = find_field(fields, "predkladatel.autor.meno")
+    assert author is not None
+    assert author.name == "Meno Priezvisko"
+    assert find_field(fields, "predkladatel.informacia") is None
+
+
+def test_real_export_reads_budget_rows_as_table_columns():
+    column = find_field(read_form(FINAL_REPORT), "finansprava.prehlad.prehlad.skutocne_cerpanie")
+    assert column is not None
+    assert column.table_tag == "prehlad"
+    assert column.type == "TABLE_ITEM_CURRENCY"
+
+
+def test_repeated_tag_is_found_only_by_its_path():
+    fields = read_form(FINAL_REPORT)
+    assert len({field.path for field in fields}) == len(fields)
+    assert [field.path for field in fields if field.tag == "suma"] == ["finansprava.suma", f"{DOCUMENTS}.suma"]
+    assert find_field(fields, "suma") is None
+    assert find_field(fields, f"{DOCUMENTS}.suma").table_tag == "zoznamuctovnychdokladov"
+    assert find_field(fields, "cislo_zmluvy").path == "predkladatel.cislo_zmluvy"
+
+
+def test_invoice_rows_land_in_the_real_document_table():
+    mapping = parse_mapping(
+        json.dumps(
+            {
+                "form": FINAL_REPORT,
+                "fields": {},
+                "lines": {"description": f"{DOCUMENTS}.polozka", "amount": f"{DOCUMENTS}.suma"},
+            }
+        )
+    )
+    response = to_response(extract_fields(LINES), 0.8, "doc", mapping)
+    section = response.tree.roots[0].sections[-1]
+    assert section.id == "zoznamuctovnychdokladov"
+    assert section.title == "Zoznam učtovných dokladov"
+    first = {tag.tag: tag.value for tag in section.items[0].tags}
+    assert first == {f"{DOCUMENTS}.polozka": "Grafický návrh plagátu", f"{DOCUMENTS}.suma": "800.00"}

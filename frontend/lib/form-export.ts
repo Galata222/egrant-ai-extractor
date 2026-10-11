@@ -1,4 +1,8 @@
 export type FormField = {
+  // Tags of every parent down to this field, joined by dots. A real export
+  // repeats short tags ("suma", "datum") in several tables, so only the path
+  // names one field.
+  path: string;
   tag: string;
   name: string;
   type: string;
@@ -46,11 +50,16 @@ const STORAGE_KEY = "egrant-form-mapping";
 const CONTAINERS = new Set([
   "SECTION",
   "SUBSECTION",
+  "SUB_SECTION",
+  "BUDGET",
   "REPEATABLE_SUBSECTION",
   "POPUP_SECTION",
   "WIZARD",
   "WIZARD_STEP",
 ]);
+
+// Both hold repeating rows whose children are the columns.
+const TABLES = new Set(["TABLE_LIST", "BUDGET_SECTION"]);
 
 export const EXAMPLE_FORM = `{
   "type": "root",
@@ -87,13 +96,13 @@ export const EXAMPLE_FORM = `{
 export const EXAMPLE_MAPPING: StoredMapping = {
   formText: EXAMPLE_FORM,
   fields: {
-    supplier_name: "ziadatel.nazov",
-    ico: "ziadatel.ico",
-    invoice_number: "faktura.cislo",
+    supplier_name: "ziadatel_sekcia.ziadatel.nazov",
+    ico: "ziadatel_sekcia.ziadatel.ico",
+    invoice_number: "faktura_sekcia.faktura.cislo",
   },
   lines: {
-    description: "polozka",
-    amount: "suma",
+    description: "faktura_sekcia.polozky.polozka",
+    amount: "faktura_sekcia.polozky.suma",
   },
 };
 
@@ -124,7 +133,7 @@ export function readFormExport(
   if (!trimmed) return { ok: false };
   try {
     const form = JSON.parse(trimmed) as unknown;
-    return { ok: true, form, fields: walk(form, null, null) };
+    return { ok: true, form, fields: walk(form, null, null, []) };
   } catch {
     return { ok: false };
   }
@@ -154,27 +163,30 @@ function walk(
   node: unknown,
   section: { tag: string; name: string } | null,
   table: { tag: string; name: string } | null,
+  parents: string[],
 ): FormField[] {
-  if (Array.isArray(node)) return node.flatMap((child) => walk(child, section, table));
+  if (Array.isArray(node)) return node.flatMap((child) => walk(child, section, table, parents));
   if (!node || typeof node !== "object") return [];
   const record = node as Record<string, unknown>;
   const kind = String(record.type || "ROOT").trim().toUpperCase();
   const tag = typeof record.tag === "string" ? record.tag.trim() : "";
   const name = typeof record.name === "string" && record.name.trim() ? record.name.trim() : tag;
   const children = Array.isArray(record.children) ? record.children : [];
-  if (kind === "ROOT") return children.flatMap((child) => walk(child, section, table));
+  if (kind === "ROOT") return children.flatMap((child) => walk(child, section, table, parents));
+  const below = tag ? [...parents, tag] : parents;
   if (CONTAINERS.has(kind)) {
     const next = { tag: tag || section?.tag || "formular", name: name || section?.name || "Formulár" };
-    return children.flatMap((child) => walk(child, next, table));
+    return children.flatMap((child) => walk(child, next, table, below));
   }
-  if (kind === "TABLE_LIST") {
+  if (TABLES.has(kind)) {
     const nextTable = { tag: tag || "tabulka", name: name || tag || "Tabuľka" };
     const parent = section ?? { tag: "formular", name: "Formulár" };
-    return children.flatMap((child) => walk(child, parent, nextTable));
+    return children.flatMap((child) => walk(child, parent, nextTable, below));
   }
-  if (!tag) return children.flatMap((child) => walk(child, section, table));
+  if (!tag) return children.flatMap((child) => walk(child, section, table, parents));
   return [
     {
+      path: below.join("."),
       tag,
       name: name || tag,
       type: kind,
