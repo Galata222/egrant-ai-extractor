@@ -196,7 +196,7 @@ def rules_decide(session: Session) -> dict[str, Any]:
 def model_decide(session: Session) -> dict[str, Any]:
     key = os.environ["AGENT_API_KEY"]
     base = os.getenv("AGENT_BASE_URL", "https://api.openai.com/v1").rstrip("/")
-    model = os.getenv("AGENT_MODEL", "openai/gpt-4o-mini")
+    model = os.getenv("AGENT_MODEL", "gpt-4o-mini")
     response = httpx.post(
         f"{base}/chat/completions",
         headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
