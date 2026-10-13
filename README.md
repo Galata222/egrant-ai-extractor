@@ -98,4 +98,4 @@ Confirming in the iframe posts `{ type: "egrant:fill", payload }`. In production
 
 `POST /agent/answer` with JSON `{ "session_id", "section_id", "item_id", "tag", "value" }`. `value` is what the person typed. The agent then chooses the next step.
 
-The API reads `backend/.env` on startup. That file is gitignored. Copy `backend/.env.example` and set `OPENAI_API_KEY`, `OPENROUTER_API_KEY`, and `AGENT_API_KEY` there. `AGENT_BASE_URL` defaults to `https://api.openai.com/v1` in the example, and `AGENT_MODEL` defaults to `gpt-4o-mini`. With no agent key, the same tools run in a fixed order: list the empty fields, ask for the first one, then wait. The person still presses confirm. The confirmed object is unchanged.
+The API reads `backend/.env` on startup. That file is gitignored. Copy `backend/.env.example` and set `AGENT_API_KEY` there; it is the only key the code reads. `AGENT_BASE_URL` defaults to `https://api.openai.com/v1` in the example, and `AGENT_MODEL` defaults to `gpt-4o-mini`. With no agent key, the same tools run in a fixed order: list the empty fields, ask for the first one, then wait. The person still presses confirm. The confirmed object is unchanged.
