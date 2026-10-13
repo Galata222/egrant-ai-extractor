@@ -18,6 +18,7 @@ import httpx
 from pydantic import BaseModel, Field
 
 from app.schemas import Tree
+from app.validators import parse_date, parse_dic, parse_ico, parse_money
 
 MAX_STEPS = 4
 MISSING_LIMIT = 20
@@ -159,7 +160,10 @@ def answer_session(
     cleaned = value.strip()
     if not cleaned:
         raise ValueError("empty_value")
-    _apply_human_value(session.tree, section_id, item_id, tag, cleaned)
+    checked = check_human_value(_field_key(session.tree, section_id, item_id, tag), cleaned)
+    if checked is None:
+        raise ValueError("invalid_value")
+    _apply_human_value(session.tree, section_id, item_id, tag, checked)
     session.messages.append(
         {
             "role": "user",
@@ -380,6 +384,54 @@ def _turn(session: Session, decide: Decide) -> AgentTurn:
         missing_count=len(missing),
         missing=missing[:MISSING_LIMIT],
     )
+
+
+_DATE_KEYS = {"issue_date", "due_date", "booking_date", "effective_date", "signed_date"}
+_MONEY_KEYS = {
+    "total_net",
+    "total_gross",
+    "contract_value",
+    "settlement_total",
+    "statement_amount",
+    "amount",
+}
+
+
+def check_human_value(key: str | None, value: str) -> str | None:
+    """Check a typed value like an extracted one. Returns the value to store, or None.
+
+    A person can mistype as easily as OCR can misread, so the same validators apply.
+    Fields without a format (names, document numbers) are kept as typed.
+    """
+    if key == "ico":
+        return parse_ico(value)
+    if key == "dic":
+        compact = value.replace(" ", "")
+        # A person types the tax number as printed: ten digits, with or without "SK".
+        if compact.isdigit() and len(compact) == 10:
+            return compact
+        return parse_dic(value)
+    if key in _DATE_KEYS:
+        return parse_date(value)
+    if key in _MONEY_KEYS:
+        # The extractor wants a currency next to a whole amount; a person typing
+        # into an amount field has already said it is money.
+        return parse_money(value) or parse_money(f"{value} EUR")
+    return value
+
+
+def _field_key(tree: Tree, section_id: str, item_id: str, tag_name: str) -> str | None:
+    for root in tree.roots:
+        for section in root.sections:
+            if section.id != section_id:
+                continue
+            for item in section.items:
+                if item.id != item_id:
+                    continue
+                for tag in item.tags:
+                    if tag.tag == tag_name:
+                        return tag.key
+    return None
 
 
 def _apply_human_value(tree: Tree, section_id: str, item_id: str, tag_name: str, value: str) -> None:
