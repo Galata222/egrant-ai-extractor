@@ -88,6 +88,10 @@ Host this Next.js app and point an iframe at `/embed`. A local stand-in is [http
 
 Confirming in the iframe posts `{ type: "egrant:fill", payload }`. In production, eGrant would `POST` that payload to `/api/v1/applications/{id}/fill`. The same screen is a React component (`ExtractorApp`) if eGrant would rather mount it than use an iframe. Tag names are data in [backend/app/mapping/tags.json](backend/app/mapping/tags.json), so a real výzva dictionary can replace them without rewriting the pipeline.
 
+## Known limitations
+
+- Review agent sessions are kept in the memory of the API process. Restarting the API ends every open session, and only the 100 most recent sessions are kept. The extracted values are not lost: the screen still holds them, and starting the agent again continues from there. Running more than one API process would need the sessions in a shared store.
+
 ## API
 
 `GET /health` → `{ "status": "ok" }`
