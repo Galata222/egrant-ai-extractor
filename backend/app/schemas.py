@@ -8,6 +8,9 @@ class TagValue(BaseModel):
     confidence: float
     needs_review: bool
     required: bool
+    # Which extracted field the tag holds ("ico", "issue_date"), so a value typed
+    # by a person can be checked the same way as a value read from the document.
+    key: str | None = None
 
 
 class Item(BaseModel):

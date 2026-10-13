@@ -132,6 +132,7 @@ const errorsSk: Record<string, string> = {
   sample_failed: "Ukážkovú faktúru sa nepodarilo načítať.",
   invalid_mapping: "Mapovanie formulára nie je platný JSON.",
   empty_value: "Najprv doplňte údaj, ktorý agent pýta.",
+  invalid_value: "Údaj nemá správny tvar. Skontrolujte ho a skúste znova.",
   wrong_field: "Agent čaká na iný údaj.",
   agent_session: "Relácia agenta už nie je otvorená.",
 };
@@ -147,6 +148,7 @@ const errorsEn: Record<string, string> = {
   sample_failed: "The sample invoice could not be loaded.",
   invalid_mapping: "The form mapping is not valid JSON.",
   empty_value: "Fill in the field the agent asked for first.",
+  invalid_value: "The value is not in the right format. Check it and try again.",
   wrong_field: "The agent is waiting for a different field.",
   agent_session: "The agent session is no longer open.",
 };

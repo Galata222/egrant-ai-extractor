@@ -5,6 +5,7 @@ export type TagValue = {
   confidence: number;
   needs_review: boolean;
   required: boolean;
+  key?: string | null;
 };
 
 export type Item = {
