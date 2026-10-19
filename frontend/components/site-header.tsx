@@ -5,20 +5,17 @@ import { LanguageSwitch, useCopy } from "@/lib/locale";
 import { useTheme } from "@/lib/theme";
 
 type SiteHeaderProps = {
-  mappingOpen?: boolean;
-  onToggleMapping?: () => void;
   onSample?: () => void;
 };
 
-const outlineButton =
-  "inline-flex h-9 shrink-0 items-center rounded-full border border-line bg-card px-3.5 text-[13px] font-medium transition duration-200 hover:bg-soft";
 const solidButton =
-  "inline-flex h-9 shrink-0 items-center rounded-full bg-ink px-4 text-[13px] font-medium text-canvas transition duration-200 hover:opacity-85";
+  "inline-flex h-9 shrink-0 items-center rounded-full bg-ink px-4 text-sm font-medium text-canvas transition duration-200 hover:opacity-85";
 
-export function SiteHeader({ mappingOpen = false, onToggleMapping, onSample }: SiteHeaderProps) {
+export function SiteHeader({ onSample }: SiteHeaderProps) {
   const copy = useCopy();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, textSize, setTextSize } = useTheme();
   const dark = theme === "dark";
+  const largeText = textSize === "large";
 
   return (
     <header className="fixed inset-x-0 top-0 z-30 bg-canvas/85 px-4 py-3 backdrop-blur-md">
@@ -27,19 +24,10 @@ export function SiteHeader({ mappingOpen = false, onToggleMapping, onSample }: S
           <Mark />
           <span className="min-w-0">
             <span className="display block text-[17px] leading-none tracking-[-0.04em]">{copy.brand}</span>
-            <span className="mt-1 hidden truncate text-[11px] text-muted sm:block">{copy.navTagline}</span>
+            <span className="mt-1 hidden truncate text-sm text-muted sm:block">{copy.navTagline}</span>
           </span>
         </Link>
         <nav className="ml-auto flex shrink-0 items-center gap-2">
-          {onToggleMapping ? (
-            <button type="button" aria-expanded={mappingOpen} onClick={onToggleMapping} className={outlineButton}>
-              {copy.mappingTitle}
-            </button>
-          ) : (
-            <Link href="/" className={outlineButton}>
-              {copy.mappingTitle}
-            </Link>
-          )}
           {onSample ? (
             <button type="button" onClick={onSample} className={solidButton}>
               {copy.sampleShort}
@@ -50,6 +38,15 @@ export function SiteHeader({ mappingOpen = false, onToggleMapping, onSample }: S
             </Link>
           )}
           <LanguageSwitch />
+          <button
+            type="button"
+            aria-pressed={largeText}
+            aria-label={largeText ? copy.regularText : copy.largerText}
+            onClick={() => setTextSize(largeText ? "regular" : "large")}
+            className="flex h-9 min-w-9 shrink-0 items-center justify-center rounded-full border border-line bg-card px-2 text-sm font-medium transition duration-200 hover:bg-soft"
+          >
+            A+
+          </button>
           <button
             type="button"
             aria-pressed={dark}

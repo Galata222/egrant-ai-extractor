@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { guideKind } from "@/lib/field-guide";
+import { invalidFormat } from "@/lib/validate";
 import { useCopy } from "@/lib/locale";
 import type { AgentTurn } from "@/lib/types";
 
@@ -9,17 +11,21 @@ type AgentPanelProps = {
   busy: boolean;
   value: string;
   error: string | null;
+  formReady: boolean;
   onValue: (value: string) => void;
   onSend: () => void;
 };
 
-export function AgentPanel({ turn, busy, value, error, onValue, onSend }: AgentPanelProps) {
+export function AgentPanel({ turn, busy, value, error, formReady, onValue, onSend }: AgentPanelProps) {
   const copy = useCopy();
   const focus = turn?.focus ?? null;
   const inputRef = useRef<HTMLInputElement>(null);
   const label = focus ? (copy.tags[focus.tag] ?? focus.label) : "";
-  const waiting = Boolean(turn?.session_id && turn.status === "waiting" && focus);
-  const ready = turn?.status === "ready";
+  const guide = focus ? copy.fieldGuide[guideKind(focus.tag)] : null;
+  const shape = guide?.shape ?? "";
+  const formatInvalid = Boolean(focus && value.trim() && invalidFormat(focus.tag, value));
+  const waiting = Boolean(turn?.session_id && turn.status === "waiting" && focus) && !formReady;
+  const ready = turn?.status === "ready" || formReady;
   const working = !turn || (busy && !focus && !ready);
 
   useEffect(() => {
@@ -27,20 +33,8 @@ export function AgentPanel({ turn, busy, value, error, onValue, onSend }: AgentP
     inputRef.current?.focus();
   }, [waiting, focus?.section_id, focus?.item_id, focus?.tag]);
 
-  const title = working
-    ? copy.agentWorkingTitle
-    : turn?.code === "ask_reviewer"
-      ? label
-      : turn?.code === "ready_to_confirm"
-        ? copy.agentReadyTitle
-        : copy.agentFailed;
-  const detail = working
-    ? copy.agentWorking
-    : turn?.code === "ask_reviewer"
-      ? copy.agentFromDocument
-      : turn?.code === "ready_to_confirm"
-        ? copy.agentReady
-        : null;
+  const title = working ? copy.agentWorkingTitle : ready ? copy.agentReadyTitle : turn?.code === "ask_reviewer" ? label : copy.agentFailed;
+  const detail = working ? copy.agentWorking : ready ? copy.agentReady : turn?.code === "ask_reviewer" ? copy.agentFromDocument : null;
 
   return (
     <section id="agent-panel" className="rounded-[24px] border border-line bg-card p-5">
@@ -52,17 +46,14 @@ export function AgentPanel({ turn, busy, value, error, onValue, onSend }: AgentP
         />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm font-medium">{copy.agentTitle}</p>
-            {turn && turn.missing_count > 0 ? (
-              <p className="text-sm text-warn">{copy.missingCount(turn.missing_count)}</p>
+            <p className="text-base font-medium">{copy.agentTitle}</p>
+            {turn && turn.missing_count > 0 && !formReady ? (
+              <p className="text-base text-warn">{copy.missingCount(turn.missing_count)}</p>
             ) : null}
           </div>
           <h2 className="display mt-1 text-[32px] leading-none">{title}</h2>
-          {detail ? <p className="mt-2 max-w-md text-sm text-muted">{detail}</p> : null}
-          {turn?.decider === "rules" && turn.status !== "failed" ? (
-            <p className="mt-1 max-w-md text-sm text-muted">{copy.agentRules}</p>
-          ) : null}
-          {error ? <p className="mt-2 text-sm text-warn">{error}</p> : null}
+          {detail ? <p className="mt-2 max-w-md text-base text-muted">{detail}</p> : null}
+          {error ? <p className="mt-2 text-base text-warn">{error}</p> : null}
           {waiting ? (
             <div className="mt-4 flex w-full flex-wrap items-center gap-2">
               <label className="sr-only" htmlFor="agent-value">
@@ -72,10 +63,13 @@ export function AgentPanel({ turn, busy, value, error, onValue, onSend }: AgentP
                 id="agent-value"
                 ref={inputRef}
                 value={value}
-                placeholder={copy.unknown}
+                placeholder={shape || copy.unknown}
+                spellCheck={false}
+                autoCorrect="off"
+                aria-invalid={formatInvalid}
                 onChange={(event) => onValue(event.target.value)}
                 onKeyDown={(event) => {
-                  if (event.key === "Enter" && value.trim() && !busy) {
+                  if (event.key === "Enter" && value.trim() && !formatInvalid && !busy) {
                     event.preventDefault();
                     onSend();
                   }
@@ -84,14 +78,15 @@ export function AgentPanel({ turn, busy, value, error, onValue, onSend }: AgentP
               />
               <button
                 type="button"
-                disabled={busy || value.trim().length === 0}
+                disabled={busy || value.trim().length === 0 || formatInvalid}
                 onClick={onSend}
-                className="h-12 rounded-full bg-ink px-5 text-sm font-medium text-canvas transition duration-200 hover:opacity-85 disabled:cursor-not-allowed disabled:bg-soft disabled:text-muted disabled:opacity-100"
+                className="h-11 rounded-full bg-ink px-5 text-sm font-medium text-canvas transition duration-200 hover:opacity-85 disabled:cursor-not-allowed disabled:bg-soft disabled:text-muted disabled:opacity-100"
               >
                 {copy.agentSend}
               </button>
             </div>
           ) : null}
+          {waiting && formatInvalid && guide ? <p className="mt-2 text-base text-warn">{guide.invalid}</p> : null}
         </div>
       </div>
     </section>

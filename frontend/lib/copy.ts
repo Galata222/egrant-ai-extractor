@@ -46,17 +46,6 @@ type Copy = {
   kinds: Record<string, string>;
   tags: Record<string, string>;
   errors: Record<string, string>;
-  mappingTitle: string;
-  mappingHint: string;
-  mappingUpload: string;
-  mappingExample: string;
-  mappingClear: string;
-  mappingInvalid: string;
-  mappingLines: string;
-  mappingNone: string;
-  mappingReady: string;
-  canonical: Record<string, string>;
-  lineFields: Record<string, string>;
   agentTitle: string;
   agentWorking: string;
   agentWorkingTitle: string;
@@ -67,6 +56,24 @@ type Copy = {
   agentRules: string;
   agentSend: string;
   agentFailed: string;
+  fieldGuide: Record<"ico" | "dic" | "date" | "amount" | "text", FieldGuide>;
+  checkHighlighted: string;
+  confirming: string;
+  readyForEgrant: string;
+  showTechnical: string;
+  hideTechnical: string;
+  revise: string;
+  largerText: string;
+  regularText: string;
+  help: string;
+  reading: string;
+};
+
+type FieldGuide = {
+  shape: string;
+  missing: string;
+  invalid: string;
+  help?: string;
 };
 
 const tagsSk: Record<string, string> = {
@@ -125,11 +132,11 @@ const errorsSk: Record<string, string> = {
   unsupported_type: "Povolené formáty sú PDF, JPG, PNG a XLSX.",
   file_too_large: "Súbor je väčší ako 10 MB.",
   empty_file: "Súbor je prázdny.",
-  unreadable_file: "Súbor sa nepodarilo prečítať.",
-  empty_pdf: "PDF neobsahuje žiadnu stranu.",
-  ocr_unavailable: "Čítanie fotografií nie je nainštalované. Nainštalujte requirements.txt.",
-  extract_failed: "Extrakciu sa nepodarilo dokončiť.",
-  sample_failed: "Ukážkovú faktúru sa nepodarilo načítať.",
+  unreadable_file: "Súbor sa nepodarilo prečítať. Skúste iný PDF, JPG, PNG alebo XLSX.",
+  empty_pdf: "PDF neobsahuje žiadnu stranu. Nahrajte doklad, ktorý má aspoň jednu stranu.",
+  ocr_unavailable: "Fotku sa nepodarilo prečítať. Nahrajte PDF s textom alebo nainštalujte čítanie fotografií.",
+  extract_failed: "Extrakciu sa nepodarilo dokončiť. Skúste súbor nahrať znova.",
+  sample_failed: "Ukážkovú faktúru sa nepodarilo načítať. Skúste to ešte raz.",
   invalid_mapping: "Mapovanie formulára nie je platný JSON.",
   empty_value: "Najprv doplňte údaj, ktorý agent pýta.",
   wrong_field: "Agent čaká na iný údaj.",
@@ -140,11 +147,11 @@ const errorsEn: Record<string, string> = {
   unsupported_type: "Allowed formats are PDF, JPG, PNG, and XLSX.",
   file_too_large: "The file is larger than 10 MB.",
   empty_file: "The file is empty.",
-  unreadable_file: "The file could not be read.",
-  empty_pdf: "The PDF has no pages.",
-  ocr_unavailable: "Photo reading is not installed. Install requirements.txt.",
-  extract_failed: "Extraction could not be completed.",
-  sample_failed: "The sample invoice could not be loaded.",
+  unreadable_file: "The file could not be read. Try another PDF, JPG, PNG, or XLSX.",
+  empty_pdf: "The PDF has no pages. Upload a document that has at least one page.",
+  ocr_unavailable: "The photo could not be read. Upload a PDF with text, or install photo reading.",
+  extract_failed: "Extraction could not be completed. Upload the file again.",
+  sample_failed: "The sample invoice could not be loaded. Try again.",
   invalid_mapping: "The form mapping is not valid JSON.",
   empty_value: "Fill in the field the agent asked for first.",
   wrong_field: "The agent is waiting for a different field.",
@@ -212,42 +219,6 @@ const dictionaries: Record<Lang, Copy> = {
     },
     tags: tagsSk,
     errors: errorsSk,
-    mappingTitle: "Mapovanie na formulár",
-    mappingHint: "Vložte JSON export formulára a priraďte polia dokladu k jeho tagom. Bez mapovania ostáva ukážkový formulár.",
-    mappingUpload: "Nahrať JSON formulára",
-    mappingExample: "Načítať ukážkový formulár",
-    mappingClear: "Zrušiť mapovanie",
-    mappingInvalid: "JSON formulára sa nepodarilo prečítať.",
-    mappingLines: "Položky tabuľky",
-    mappingNone: "Nepriradené",
-    mappingReady: "Ďalšia extrakcia použije tieto tagy.",
-    canonical: {
-      supplier_name: "Názov dodávateľa",
-      ico: "IČO",
-      dic: "DIČ",
-      invoice_number: "Číslo faktúry",
-      issue_date: "Dátum vystavenia",
-      due_date: "Dátum splatnosti",
-      total_net: "Suma bez DPH",
-      total_gross: "Suma s DPH",
-      contract_number: "Číslo zmluvy",
-      signed_date: "Dátum uzavretia",
-      effective_date: "Dátum účinnosti",
-      subject: "Predmet",
-      contract_value: "Zmluvná cena",
-      settlement_count: "Počet dokladov",
-      settlement_period: "Obdobie",
-      settlement_total: "Suma vyúčtovania",
-      booking_date: "Dátum zaúčtovania",
-      counterparty: "Protistrana",
-      statement_amount: "Suma výpisu",
-    },
-    lineFields: {
-      description: "Text položky",
-      amount: "Suma položky",
-      invoice_file: "Súbor faktúry",
-      file_id: "ID súboru",
-    },
     agentTitle: "Agent",
     agentWorking: "Agent vyberá ďalší krok.",
     agentWorkingTitle: "Vyberá ďalší krok",
@@ -258,6 +229,44 @@ const dictionaries: Record<Lang, Copy> = {
     agentRules: "Kľúč modelu nie je nastavený, preto agent ide v pevnom poradí.",
     agentSend: "Odoslať tento údaj",
     agentFailed: "Agent nevedel vybrať ďalší krok. Formulár môžete doplniť aj tak.",
+    fieldGuide: {
+      ico: {
+        shape: "8 číslic, napríklad 00151653",
+        missing: "IČO nie je na doklade. Doplňte 8 číslic.",
+        invalid: "IČO má mať 8 číslic a platný kontrolný súčet, napríklad 00151653.",
+      },
+      dic: {
+        shape: "SK a 10 číslic",
+        missing: "DIČ nie je na doklade. Doplňte ho v tvare SK a 10 číslic.",
+        invalid: "DIČ má byť v tvare SK a 10 číslic.",
+        help: "DIČ je daňové identifikačné číslo. IČO je osemmiestne číslo organizácie. Na doklade nemusia byť obe.",
+      },
+      date: {
+        shape: "DD.MM.RRRR",
+        missing: "Dátum nie je na doklade. Zapíšte ho ako DD.MM.RRRR.",
+        invalid: "Dátum zapíšte ako DD.MM.RRRR.",
+      },
+      amount: {
+        shape: "Suma a mena, napríklad 1481.47 EUR",
+        missing: "Suma nie je na doklade. Odpíšte ju aj s menou.",
+        invalid: "Suma má obsahovať číslo a menu, napríklad 1481.47 EUR.",
+      },
+      text: {
+        shape: "",
+        missing: "Toto pole je prázdne. Odpíšte ho z dokladu.",
+        invalid: "Skontrolujte tento údaj podľa dokladu.",
+      },
+    },
+    checkHighlighted: "Skontrolujte zvýraznené polia.",
+    confirming: "Ukladám…",
+    readyForEgrant: "Údaje sú pripravené pre eGrant",
+    showTechnical: "Zobraziť technický zápis",
+    hideTechnical: "Skryť technický zápis",
+    revise: "Vrátiť sa k úprave",
+    largerText: "Väčší text",
+    regularText: "Bežný text",
+    help: "Pomoc",
+    reading: "Čítame doklad…",
   },
   en: {
     brand: "eGrant",
@@ -319,42 +328,6 @@ const dictionaries: Record<Lang, Copy> = {
     },
     tags: tagsEn,
     errors: errorsEn,
-    mappingTitle: "Form mapping",
-    mappingHint: "Paste a form JSON export and assign document fields to its tags. Without a mapping, the sample form stays in place.",
-    mappingUpload: "Upload form JSON",
-    mappingExample: "Load the example form",
-    mappingClear: "Clear mapping",
-    mappingInvalid: "The form JSON could not be read.",
-    mappingLines: "Table columns",
-    mappingNone: "Not assigned",
-    mappingReady: "The next extract will use these tags.",
-    canonical: {
-      supplier_name: "Supplier name",
-      ico: "Company ID",
-      dic: "VAT ID",
-      invoice_number: "Invoice number",
-      issue_date: "Issue date",
-      due_date: "Due date",
-      total_net: "Amount excl. VAT",
-      total_gross: "Amount incl. VAT",
-      contract_number: "Contract number",
-      signed_date: "Date of signature",
-      effective_date: "Effective date",
-      subject: "Subject",
-      contract_value: "Contract price",
-      settlement_count: "Number of documents",
-      settlement_period: "Period",
-      settlement_total: "Settlement total",
-      booking_date: "Booking date",
-      counterparty: "Counterparty",
-      statement_amount: "Statement amount",
-    },
-    lineFields: {
-      description: "Line text",
-      amount: "Line amount",
-      invoice_file: "Invoice file",
-      file_id: "File id",
-    },
     agentTitle: "Agent",
     agentWorking: "The agent is choosing the next step.",
     agentWorkingTitle: "Choosing the next step",
@@ -365,11 +338,61 @@ const dictionaries: Record<Lang, Copy> = {
     agentRules: "No model key is set, so the agent follows a fixed order.",
     agentSend: "Send this value",
     agentFailed: "The agent could not choose a next step. You can still complete the form.",
+    fieldGuide: {
+      ico: {
+        shape: "8 digits, for example 00151653",
+        missing: "The company ID is not on the document. Enter 8 digits.",
+        invalid: "The company ID needs 8 digits and a valid check digit, for example 00151653.",
+      },
+      dic: {
+        shape: "SK plus 10 digits",
+        missing: "The VAT ID is not on the document. Enter SK plus 10 digits.",
+        invalid: "The VAT ID needs to be SK plus 10 digits.",
+        help: "The VAT ID is the tax number. The company ID is the 8-digit organisation number. A document does not have to print both.",
+      },
+      date: {
+        shape: "DD.MM.YYYY",
+        missing: "The date is not on the document. Enter it as DD.MM.YYYY.",
+        invalid: "Enter the date as DD.MM.YYYY.",
+      },
+      amount: {
+        shape: "Amount and currency, for example 1481.47 EUR",
+        missing: "The amount is not on the document. Copy it with the currency.",
+        invalid: "The amount needs a number and a currency, for example 1481.47 EUR.",
+      },
+      text: {
+        shape: "",
+        missing: "This field is empty. Copy it from the document.",
+        invalid: "Check this value against the document.",
+      },
+    },
+    checkHighlighted: "Check the highlighted fields.",
+    confirming: "Saving…",
+    readyForEgrant: "The data is ready for eGrant",
+    showTechnical: "Show the technical record",
+    hideTechnical: "Hide the technical record",
+    revise: "Return to editing",
+    largerText: "Larger text",
+    regularText: "Regular text",
+    help: "Help",
+    reading: "Reading the document…",
   },
 };
 
 export function copyFor(lang: Lang): Copy {
   return dictionaries[lang];
+}
+
+export function readingFileLabel(name: string, lang: Lang): string {
+  return lang === "en" ? `Reading “${name}”…` : `Čítame doklad „${name}“…`;
+}
+
+export function missingFieldLabel(label: string, lang: Lang): string {
+  return lang === "en" ? `Fill in “${label}” first.` : `Najprv doplňte „${label}“.`;
+}
+
+export function invalidFieldLabel(label: string, lang: Lang): string {
+  return lang === "en" ? `Correct “${label}”.` : `Opravte „${label}“.`;
 }
 
 export function missingCountLabel(count: number, lang: Lang): string {

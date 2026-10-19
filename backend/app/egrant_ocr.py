@@ -15,10 +15,13 @@ def read_text(data: bytes, filename: str) -> str | None:
     try:
         import httpx
 
+        # The organizer image reads a text layer itself and OCRs only when that
+        # layer is missing. force_ocr is left off so this call cannot replace a
+        # checked value the local text layer already accepted.
         response = httpx.post(
             url,
             files={"file": (filename or "doklad", data)},
-            timeout=20.0,
+            timeout=45.0,
         )
         response.raise_for_status()
         return text_from_body(response.json())

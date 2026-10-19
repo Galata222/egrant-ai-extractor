@@ -46,10 +46,15 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+html[data-text="large"] {
+  font-size: 18px;
+}
+
 body {
   background: var(--canvas);
   color: var(--ink);
   font-family: var(--font-sans);
+  font-size: 1rem;
 }
 
 :focus-visible {

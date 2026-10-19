@@ -1,4 +1,5 @@
 import type { ConfirmedFill, TagValue, Tree } from "@/lib/types";
+import { invalidFormat } from "@/lib/validate";
 
 const THRESHOLD = 0.8;
 
@@ -7,7 +8,59 @@ export function fieldNeedsAttention(tag: TagValue, sibling?: TagValue): boolean 
   const siblingBlank = sibling ? !sibling.value?.trim() : true;
   if (tag.tag.startsWith("TABLE_ITEM_") && blank && siblingBlank) return false;
   if (blank) return true;
+  if (invalidFormat(tag.tag, tag.value)) return true;
   return tag.needs_review || tag.confidence < THRESHOLD;
+}
+
+export type FieldGap = {
+  sectionId: string;
+  itemId: string;
+  tag: string;
+  inputId: string;
+  reason: "blank" | "invalid";
+};
+
+export function firstGap(tree: Tree): FieldGap | null {
+  for (const root of tree.roots) {
+    for (const section of root.sections) {
+      if (section.id === "polozky") {
+        for (const item of section.items) {
+          const description = item.tags.find((tag) => tag.tag === "TABLE_ITEM_STRING");
+          const amount = item.tags.find((tag) => tag.tag === "TABLE_ITEM_CURRENCY");
+          const hasDescription = Boolean(description?.value?.trim());
+          const hasAmount = Boolean(amount?.value?.trim());
+          if (hasDescription && !hasAmount && amount) {
+            return gap(section.id, item.id, amount.tag, `${item.id}-${amount.tag}`, "blank");
+          }
+          if (!hasDescription && hasAmount && description) {
+            return gap(section.id, item.id, description.tag, `${item.id}-${description.tag}`, "blank");
+          }
+          if (description && hasDescription && invalidFormat(description.tag, description.value)) {
+            return gap(section.id, item.id, description.tag, `${item.id}-${description.tag}`, "invalid");
+          }
+          if (amount && hasAmount && invalidFormat(amount.tag, amount.value)) {
+            return gap(section.id, item.id, amount.tag, `${item.id}-${amount.tag}`, "invalid");
+          }
+        }
+        continue;
+      }
+      for (const item of section.items) {
+        for (const tag of item.tags) {
+          if (tag.required && !tag.value?.trim()) {
+            return gap(section.id, item.id, tag.tag, `${section.id}-${tag.tag}`, "blank");
+          }
+          if (tag.value?.trim() && invalidFormat(tag.tag, tag.value)) {
+            return gap(section.id, item.id, tag.tag, `${section.id}-${tag.tag}`, "invalid");
+          }
+        }
+      }
+    }
+  }
+  return null;
+}
+
+function gap(sectionId: string, itemId: string, tag: string, inputId: string, reason: FieldGap["reason"]): FieldGap {
+  return { sectionId, itemId, tag, inputId, reason };
 }
 
 export function blockers(tree: Tree): string[] {
@@ -21,12 +74,15 @@ export function blockers(tree: Tree): string[] {
           const hasDescription = Boolean(description?.value?.trim());
           const hasAmount = Boolean(amount?.value?.trim());
           if (hasDescription !== hasAmount) missing.push(`Položka ${index + 1}`);
+          else if (description && hasDescription && invalidFormat(description.tag, description.value)) missing.push(description.label);
+          else if (amount && hasAmount && invalidFormat(amount.tag, amount.value)) missing.push(amount.label);
         });
         continue;
       }
       for (const item of section.items) {
         for (const tag of item.tags) {
           if (tag.required && !tag.value?.trim()) missing.push(tag.label);
+          else if (tag.value?.trim() && invalidFormat(tag.tag, tag.value)) missing.push(tag.label);
         }
       }
     }

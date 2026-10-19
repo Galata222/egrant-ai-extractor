@@ -4,6 +4,7 @@ import { AgentPanel } from "@/components/agent-panel";
 import { ConfirmPanel } from "@/components/confirm-panel";
 import { DocumentPane } from "@/components/document-pane";
 import { EgrantForm } from "@/components/egrant-form";
+import { firstGap } from "@/lib/export";
 import { useCopy } from "@/lib/locale";
 import type { AgentTurn, ConfirmedFill, Tree } from "@/lib/types";
 
@@ -20,7 +21,9 @@ type VerificationDeskProps = {
   onChange: (sectionId: string, itemId: string, tag: string, value: string) => void;
   onAddItem: () => void;
   onRemoveItem: (itemId: string) => void;
+  confirming: boolean;
   onConfirm: () => void;
+  onRevise: () => void;
   onReset: () => void;
   onCopy: () => void;
   onDownload: () => void;
@@ -34,17 +37,28 @@ type VerificationDeskProps = {
 
 export function VerificationDesk(props: VerificationDeskProps) {
   const copy = useCopy();
-  const disabled = props.blocked.length > 0;
+  const disabled = props.blocked.length > 0 || props.confirming;
   const kind = copy.kinds[props.documentKind] ?? props.documentKind;
+  const gap = firstGap(props.tree);
+  const gapLabel = gap ? (copy.tags[gap.tag] ?? gap.tag) : "";
+
+  function goToGap() {
+    if (!gap) return;
+    const node = document.getElementById(gap.inputId);
+    node?.scrollIntoView({ block: "center" });
+    if (node instanceof HTMLElement) node.focus();
+  }
 
   return (
     <div className="mx-auto w-full max-w-6xl px-5 pt-12 pb-16">
       <div className="h-16 w-[3px] rounded-full bg-gradient-to-b from-[#5b6cff] to-[#9b6bff]" />
       <div className="mt-6 flex flex-wrap items-end justify-between gap-6">
         <div>
-          <p className="text-sm text-muted">{props.file.name}</p>
+          <p className="text-base text-muted">{props.file.name}</p>
           <h1 className="display mt-2 text-5xl leading-[0.95] sm:text-6xl">{kind}</h1>
-          <p className="mt-4 max-w-md text-[15px] text-muted">{copy.reviewNote}</p>
+          <p className="mt-4 max-w-md text-base text-muted">
+            {props.blocked.length > 0 ? copy.checkHighlighted : copy.reviewNote}
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -54,14 +68,22 @@ export function VerificationDesk(props: VerificationDeskProps) {
           >
             {copy.reset}
           </button>
-          {props.confirmed ? null : (
+          {props.confirmed ? (
+            <button
+              type="button"
+              onClick={props.onRevise}
+              className="h-11 rounded-full border border-line bg-card px-5 text-sm font-medium transition duration-200 hover:bg-soft"
+            >
+              {copy.revise}
+            </button>
+          ) : (
             <button
               type="button"
               disabled={disabled}
               onClick={props.onConfirm}
               className="h-11 rounded-full bg-ink px-5 text-sm font-medium text-canvas transition duration-200 hover:opacity-85 disabled:cursor-not-allowed disabled:bg-soft disabled:text-muted disabled:opacity-100"
             >
-              {copy.confirm}
+              {props.confirming ? copy.confirming : copy.confirm}
             </button>
           )}
         </div>
@@ -85,6 +107,7 @@ export function VerificationDesk(props: VerificationDeskProps) {
               busy={props.agentBusy}
               value={props.agentValue}
               error={props.agentError}
+              formReady={props.blocked.length === 0}
               onValue={props.onAgentValue}
               onSend={props.onAgentSend}
             />
@@ -103,6 +126,7 @@ export function VerificationDesk(props: VerificationDeskProps) {
               copied={props.copied}
               onCopy={props.onCopy}
               onDownload={props.onDownload}
+              onRevise={props.onRevise}
             />
           ) : (
             <div className="flex flex-wrap items-center gap-3">
@@ -111,9 +135,13 @@ export function VerificationDesk(props: VerificationDeskProps) {
                 disabled={disabled}
                 className="h-11 rounded-full bg-ink px-5 text-sm font-medium text-canvas transition duration-200 hover:opacity-85 disabled:cursor-not-allowed disabled:bg-soft disabled:text-muted disabled:opacity-100"
               >
-                {copy.confirm}
+                {props.confirming ? copy.confirming : copy.confirm}
               </button>
-              {disabled ? <p className="text-sm text-warn">{copy.missingCount(props.blocked.length)}</p> : null}
+              {props.blocked.length > 0 && gap ? (
+                <button type="button" onClick={goToGap} className="text-base text-warn">
+                  {gap.reason === "invalid" ? copy.invalidField(gapLabel) : copy.missingField(gapLabel)}
+                </button>
+              ) : null}
             </div>
           )}
         </form>

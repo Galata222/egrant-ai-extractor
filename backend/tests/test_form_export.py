@@ -67,6 +67,32 @@ def test_ocr_body_keeps_only_a_text_string():
     assert text_from_body(["Faktúra"]) is None
 
 
+def test_ocr_upload_posts_the_file_without_forcing_ocr(monkeypatch):
+    from app.egrant_ocr import read_text
+
+    captured: dict[str, object] = {}
+
+    class Response:
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> dict[str, str]:
+            return {"text": "DIČ: SK1020215534\n"}
+
+    def fake_post(url: str, files: dict[str, tuple[str, bytes]], timeout: float) -> Response:
+        captured["url"] = url
+        captured["files"] = files
+        captured["timeout"] = timeout
+        return Response()
+
+    monkeypatch.setenv("EGRANT_OCR_URL", "http://127.0.0.1:9010/ocr-upload")
+    monkeypatch.setattr("httpx.post", fake_post)
+    assert read_text(b"%PDF-1.4", "faktura.pdf") == "DIČ: SK1020215534\n"
+    assert captured["url"] == "http://127.0.0.1:9010/ocr-upload"
+    assert "force_ocr" not in str(captured["url"])
+    assert captured["files"] == {"file": ("faktura.pdf", b"%PDF-1.4")}
+
+
 def test_text_layer_wins_when_the_ocr_text_disagrees():
     primary = Draft(fields={"ico": Candidate("00151653", 0.97), "dic": Candidate(None, 0)}, kind="invoice")
     secondary = Draft(

@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { useCopy } from "@/lib/locale";
+import { guideKind } from "@/lib/field-guide";
+import { invalidFormat } from "@/lib/validate";
 import { fieldNeedsAttention } from "@/lib/export";
 import { isLineSection } from "@/lib/tree";
 import type { AgentField, TagValue, Tree } from "@/lib/types";
@@ -39,7 +42,7 @@ export function EgrantForm({ tree, focus, onChange, onAddItem, onRemoveItem }: E
             <button
               type="button"
               onClick={onAddItem}
-              className="mt-2 h-10 rounded-full border border-line px-4 text-sm font-medium transition duration-200 hover:bg-soft"
+              className="mt-2 h-11 rounded-full border border-line px-4 text-sm font-medium transition duration-200 hover:bg-soft"
             >
               {copy.addItem}
             </button>
@@ -96,7 +99,7 @@ function LineItemTable({
     <div className="max-h-[28rem] overflow-auto">
       <table className="w-full border-collapse text-left">
         <thead>
-          <tr className="text-sm text-muted">
+          <tr className="text-base text-muted">
             <th className="px-1 py-2 font-semibold">{descriptionLabel}</th>
             <th className="px-1 py-2 font-semibold">{amountLabel}</th>
             {showFiles ? <th className="px-1 py-2 font-semibold">{fileLabelText}</th> : null}
@@ -134,7 +137,7 @@ function LineItemTable({
                 </td>
                 {showFiles ? (
                   <td className="px-1 py-2">
-                    <p className="pt-2 text-sm break-all" title={invoice?.value ?? undefined}>
+                    <p className="pt-2 text-base break-all" title={invoice?.value ?? undefined}>
                       {fileLabel(invoice?.value ?? null)}
                     </p>
                   </td>
@@ -143,7 +146,7 @@ function LineItemTable({
                   <button
                     type="button"
                     onClick={() => onRemoveItem(item.id)}
-                    className="h-10 rounded-full border border-line px-3 text-sm font-medium transition duration-200 hover:bg-soft"
+                    className="h-11 rounded-full border border-line px-3 text-sm font-medium transition duration-200 hover:bg-soft"
                   >
                     {copy.removeItem}
                   </button>
@@ -196,33 +199,61 @@ function TagInput({
   const copy = useCopy();
   const label = copy.tags[tag.tag] ?? tag.label;
   const attention = fieldNeedsAttention(tag, sibling);
+  const kind = guideKind(tag.tag);
+  const guide = copy.fieldGuide[kind];
+  const blank = !tag.value?.trim();
+  const badFormat = !blank && invalidFormat(tag.tag, tag.value);
+  const hint = !attention ? null : blank ? guide.missing : badFormat ? guide.invalid : copy.unknown;
   const hintId = `${inputId}-hint`;
+  const helpId = `${inputId}-help`;
+  const [helpOpen, setHelpOpen] = useState(false);
   return (
     <div>
       {labelled ? (
-        <label htmlFor={inputId} className="mb-1 block font-medium">
-          {label}
-        </label>
+        <div className="mb-1 flex items-center gap-2">
+          <label htmlFor={inputId} className="font-medium">
+            {label}
+          </label>
+          {guide.help ? (
+            <button
+              type="button"
+              aria-expanded={helpOpen}
+              aria-controls={helpId}
+              onClick={() => setHelpOpen((open) => !open)}
+              className="h-11 rounded-full border border-line px-3 text-sm font-medium transition duration-200 hover:bg-soft"
+            >
+              {copy.help}
+            </button>
+          ) : null}
+        </div>
       ) : (
         <label htmlFor={inputId} className="sr-only">
           {label}
         </label>
       )}
+      {labelled && helpOpen && guide.help ? (
+        <p id={helpId} className="mb-2 max-w-md text-base text-muted">
+          {guide.help}
+        </p>
+      ) : null}
       <input
         id={inputId}
         value={tag.value ?? ""}
         onChange={(event) => onChange(event.target.value)}
         aria-invalid={attention}
-        aria-describedby={attention ? hintId : undefined}
+        aria-describedby={hint ? hintId : undefined}
+        spellCheck={false}
+        autoCorrect="off"
+        placeholder={blank && guide.shape ? guide.shape : undefined}
         data-agent-focus={focused ? "true" : undefined}
-        className={`h-12 w-full min-w-36 rounded-2xl px-4 text-base text-ink transition duration-200 ${
+        className={`h-12 w-full min-w-36 rounded-2xl px-4 text-base text-ink transition duration-200 placeholder:text-muted ${
           attention ? "border-2 border-warn bg-warn-bg" : "border border-transparent bg-soft"
         } ${focused ? "ring-2 ring-ink ring-offset-2 ring-offset-canvas" : ""}`}
       />
-      {attention ? (
-        <p id={hintId} className="mt-1 flex gap-1 text-sm text-warn">
+      {hint ? (
+        <p id={hintId} className="mt-1 flex gap-1 text-base text-warn">
           <WarningIcon />
-          <span>{copy.unknown}</span>
+          <span>{hint}</span>
         </p>
       ) : null}
     </div>

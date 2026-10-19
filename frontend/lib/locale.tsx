@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useSyncExternalStore } from "react";
-import { copyFor, missingCountLabel, type Lang } from "@/lib/copy";
+import { copyFor, invalidFieldLabel, missingCountLabel, missingFieldLabel, readingFileLabel, type Lang } from "@/lib/copy";
 
 const EVENT = "egrant-lang";
 
@@ -45,6 +45,9 @@ export function useCopy() {
     lang: value.lang,
     setLang: value.setLang,
     missingCount: (count: number) => missingCountLabel(count, value.lang),
+    missingField: (label: string) => missingFieldLabel(label, value.lang),
+    invalidField: (label: string) => invalidFieldLabel(label, value.lang),
+    readingFile: (name: string) => readingFileLabel(name, value.lang),
   };
 }
 
@@ -66,7 +69,7 @@ function LangButton({ code, label }: { code: Lang; label: string }) {
       type="button"
       aria-pressed={selected}
       onClick={() => copy.setLang(code)}
-      className={`h-8 min-w-9 rounded-full px-2 text-[12px] font-medium transition duration-200 ${
+      className={`h-8 min-w-9 rounded-full px-2 text-sm font-medium transition duration-200 ${
         selected ? "bg-ink text-canvas" : "text-muted hover:text-ink"
       }`}
     >

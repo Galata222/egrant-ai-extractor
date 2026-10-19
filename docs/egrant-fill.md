@@ -9,7 +9,7 @@ This module reads one uploaded file and returns tag values. It does not write in
 
 Without a mapping, the sample profiles in [backend/app/mapping/tags.json](../backend/app/mapping/tags.json) are used, so the demo still shows `dodavatel.ico` and the other sample tags. With a mapping, the confirmed JSON uses the manager’s tags, for example `ziadatel.ico`.
 
-eGrant’s own OCR is an optional text source. Set `EGRANT_OCR_URL` and this module posts the file there. The response must be JSON with a `text` string. That text is read with the same validators as a text layer. When the variable is unset, a digital PDF keeps its text layer and a photo keeps the local reader. An empty or wrong OCR response does not replace a value the text layer already accepted. This module still decides which values are valid.
+eGrant’s own OCR is an optional text source. The shared image is `trayvor/ocr-api-slk:v0.0.7`, published on this machine at `http://127.0.0.1:9010`. Set `EGRANT_OCR_URL` to `http://127.0.0.1:9010/ocr-upload`. This module posts the file as form field `file` and reads the JSON `text` string. It does not send `force_ocr`. That text is read with the same validators as a text layer. When the variable is unset, a digital PDF keeps its text layer and a photo keeps the local reader. An empty or wrong OCR response does not replace a value the text layer already accepted. This module still decides which values are valid.
 
 ## Confirmed object
 

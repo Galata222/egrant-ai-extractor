@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MappingPanel } from "@/components/mapping-panel";
-import type { StoredMapping } from "@/lib/form-export";
 import { useCopy } from "@/lib/locale";
 
 const FORMATS = ["PDF", "JPG", "PNG", "XLSX"] as const;
@@ -10,10 +8,7 @@ const FORMATS = ["PDF", "JPG", "PNG", "XLSX"] as const;
 type UploadPanelProps = {
   error: string | null;
   loading: boolean;
-  mapping: StoredMapping;
-  mappingOpen: boolean;
   staged: File | null;
-  onMapping: (value: StoredMapping) => void;
   onStage: (file: File) => void;
   onClear: () => void;
   onContinue: () => void;
@@ -22,10 +17,7 @@ type UploadPanelProps = {
 export function UploadPanel({
   error,
   loading,
-  mapping,
-  mappingOpen,
   staged,
-  onMapping,
   onStage,
   onClear,
   onContinue,
@@ -49,17 +41,12 @@ export function UploadPanel({
   return (
     <div className="flex flex-1 flex-col">
       <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center px-6 pt-8 pb-10">
-        {mappingOpen ? (
-          <div className="rise mb-12 w-full">
-            <MappingPanel value={mapping} onChange={onMapping} />
-          </div>
-        ) : null}
         <div className="rise h-24 w-[3px] rounded-full bg-gradient-to-b from-[#5b6cff] to-[#9b6bff]" />
         <h1 className="display rise mt-8 text-center text-[56px] leading-[0.92] sm:text-[84px]" style={{ animationDelay: "0.08s" }}>
           <span className="block">{lead}</span>
           {rest.length > 0 ? <span className="block">{rest.join(" ")}</span> : null}
         </h1>
-        <p className="rise mt-6 max-w-md text-center text-[15px] text-muted" style={{ animationDelay: "0.16s" }}>
+        <p className="rise mt-6 max-w-md text-center text-base text-muted" style={{ animationDelay: "0.16s" }}>
           {staged ? copy.readFirst : copy.uploadHint}
         </p>
 
@@ -67,19 +54,19 @@ export function UploadPanel({
           <div className="rise mt-12 w-full">
             <div className="overflow-hidden rounded-[28px] border border-line bg-card">
               <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-4">
-                <p className="truncate text-sm font-medium">{staged.name}</p>
+                <p className="truncate text-base font-medium">{staged.name}</p>
                 <button
                   type="button"
                   onClick={onClear}
                   disabled={loading}
-                  className="h-10 shrink-0 rounded-full border border-line px-4 text-sm font-medium transition duration-200 hover:bg-soft disabled:opacity-50"
+                  className="h-11 shrink-0 rounded-full border border-line px-4 text-sm font-medium transition duration-200 hover:bg-soft disabled:opacity-50"
                 >
                   {copy.chooseAnother}
                 </button>
               </div>
               {loading ? (
                 <p role="status" className="display px-6 py-16 text-center text-4xl">
-                  {copy.loading}
+                  {copy.readingFile(staged.name)}
                 </p>
               ) : (
                 <ReadableFile file={staged} url={previewUrl} emptyLabel={copy.noSheetPreview} previewLabel={copy.preview} />
@@ -92,7 +79,7 @@ export function UploadPanel({
                 disabled={loading}
                 className="h-11 rounded-full bg-ink px-6 text-sm font-medium text-canvas transition duration-200 hover:opacity-85 disabled:opacity-50"
               >
-                {copy.continueProcess}
+                {loading ? copy.reading : copy.continueProcess}
               </button>
             </div>
             {error ? (
@@ -117,7 +104,7 @@ export function UploadPanel({
           ))}
         </div>
       </main>
-      <footer className="flex items-center justify-between border-t border-line px-6 py-4 text-[12px] text-muted">
+      <footer className="flex items-center justify-between border-t border-line px-6 py-4 text-sm text-muted">
         <p className="tracking-[0.14em] uppercase">{copy.stepUpload}</p>
         <p className="flex items-center gap-2">
           <LockIcon />
@@ -161,7 +148,7 @@ function DropZone({
       <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-soft">
         <UploadIcon />
       </span>
-      <div className="mt-8 flex w-[200px] items-center gap-3 text-[11px] tracking-[0.16em] text-muted">
+      <div className="mt-8 flex w-[200px] items-center gap-3 text-sm tracking-[0.16em] text-muted">
         <span className="h-px flex-1 bg-line" />
         {copy.orWord}
         <span className="h-px flex-1 bg-line" />
@@ -225,7 +212,7 @@ function ReadableFile({
 function Toast({ label }: { label: string }) {
   return (
     <div className="fixed bottom-8 left-1/2 -translate-x-1/2">
-      <p role="status" className="rise flex items-center gap-2 rounded-full bg-ink px-4 py-2.5 text-[13px] text-canvas">
+      <p role="status" className="rise flex items-center gap-2 rounded-full bg-ink px-4 py-2.5 text-sm text-canvas">
         <CheckIcon />
         {label}
       </p>

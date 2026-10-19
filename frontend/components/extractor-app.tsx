@@ -1,15 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MappingPanel } from "@/components/mapping-panel";
 import { UploadPanel } from "@/components/upload-panel";
 import { VerificationDesk } from "@/components/verification-desk";
 import { extractFile, validateFile } from "@/lib/api";
 import { answerAgent, FAILED_AGENT, startAgent, tagValue } from "@/lib/agent";
-import { EMPTY_MAPPING, loadMapping, mappingPayload, saveMapping, type StoredMapping } from "@/lib/form-export";
 import { SiteHeader } from "@/components/site-header";
 import { useCopy } from "@/lib/locale";
 import { blockers, toConfirmed } from "@/lib/export";
+import { invalidFormat } from "@/lib/validate";
 import { addLineItem, removeLineItem, updateTagValue } from "@/lib/tree";
 import type { AgentTurn, ConfirmedFill, Tree } from "@/lib/types";
 
@@ -30,17 +29,12 @@ export function ExtractorApp({ embed }: { embed: boolean }) {
   const [confirmed, setConfirmed] = useState<ConfirmedFill | null>(null);
   const [copied, setCopied] = useState(false);
   const [posted, setPosted] = useState(false);
-  const [mapping, setMapping] = useState<StoredMapping>(EMPTY_MAPPING);
-  const [mappingOpen, setMappingOpen] = useState(false);
   const [staged, setStaged] = useState<File | null>(null);
   const [agent, setAgent] = useState<AgentTurn | null>(null);
   const [agentBusy, setAgentBusy] = useState(false);
   const [agentError, setAgentError] = useState<string | null>(null);
   const [reviewKey, setReviewKey] = useState(0);
-
-  useEffect(() => {
-    setMapping(loadMapping());
-  }, []);
+  const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -106,7 +100,7 @@ export function ExtractorApp({ embed }: { embed: boolean }) {
     rememberFile(next);
     setPhase("loading");
     try {
-      const result = await extractFile(next, mappingPayload(mapping));
+      const result = await extractFile(next);
       setDocumentId(result.document_id);
       setPagePreview(result.page_preview);
       treeRef.current = structuredClone(result.tree);
@@ -152,6 +146,13 @@ export function ExtractorApp({ embed }: { embed: boolean }) {
     setAgent(null);
     setAgentError(null);
     setAgentBusy(false);
+    setConfirming(false);
+  }
+
+  function revise() {
+    setConfirmed(null);
+    setCopied(false);
+    setPosted(false);
   }
 
   function onFieldChange(sectionId: string, itemId: string, tag: string, value: string) {
@@ -167,7 +168,7 @@ export function ExtractorApp({ embed }: { embed: boolean }) {
     const current = treeRef.current;
     if (!agent?.focus || !agent.session_id || !current) return;
     const value = tagValue(current, agent.focus);
-    if (!value.trim()) return;
+    if (!value.trim() || invalidFormat(agent.focus.tag, value)) return;
     setAgentBusy(true);
     setAgentError(null);
     try {
@@ -180,14 +181,23 @@ export function ExtractorApp({ embed }: { embed: boolean }) {
       setAgentBusy(false);
     }
   }
-  function confirm() {
-    if (!tree || !documentId) return;
-    const payload = toConfirmed(tree, documentId, new Date().toISOString());
+  async function confirm() {
+    const current = treeRef.current;
+    if (!current || !documentId || confirming || blockers(current).length > 0) return;
+    setConfirming(true);
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    const latest = treeRef.current;
+    if (!latest || blockers(latest).length > 0) {
+      setConfirming(false);
+      return;
+    }
+    const payload = toConfirmed(latest, documentId, new Date().toISOString());
     setConfirmed(payload);
     setCopied(false);
     const sent = embed && window.parent !== window;
     if (sent) window.parent.postMessage({ type: "egrant:fill", payload }, "*");
     setPosted(sent);
+    setConfirming(false);
   }
 
   async function copyJson() {
@@ -213,26 +223,14 @@ export function ExtractorApp({ embed }: { embed: boolean }) {
     URL.revokeObjectURL(url);
   }
 
-  const updateMapping = (next: StoredMapping) => {
-    setMapping(next);
-    saveMapping(next);
-  };
-
   return (
     <div className="flex min-h-dvh flex-col bg-canvas pt-[4.75rem] text-ink">
-      <SiteHeader
-        mappingOpen={mappingOpen}
-        onToggleMapping={() => setMappingOpen((open) => !open)}
-        onSample={loadSample}
-      />
+      <SiteHeader onSample={loadSample} />
       {phase === "upload" || phase === "loading" ? (
         <UploadPanel
           error={error}
           loading={phase === "loading"}
-          mapping={mapping}
-          mappingOpen={mappingOpen}
           staged={staged}
-          onMapping={updateMapping}
           onStage={stage}
           onClear={() => setStaged(null)}
           onContinue={() => {
@@ -241,11 +239,6 @@ export function ExtractorApp({ embed }: { embed: boolean }) {
         />
       ) : (
       <main className="flex-1">
-        {mappingOpen ? (
-          <div className="mx-auto w-full max-w-3xl px-5 pt-8">
-            <MappingPanel value={mapping} onChange={updateMapping} />
-          </div>
-        ) : null}
         {phase === "review" && file && previewUrl && tree ? (
           <VerificationDesk
             file={file}
@@ -274,7 +267,11 @@ export function ExtractorApp({ embed }: { embed: boolean }) {
               });
               setConfirmed(null);
             }}
-            onConfirm={confirm}
+            confirming={confirming}
+            onConfirm={() => {
+              void confirm();
+            }}
+            onRevise={revise}
             onReset={reset}
             onCopy={copyJson}
             onDownload={downloadJson}
