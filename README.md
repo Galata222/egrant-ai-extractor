@@ -88,6 +88,10 @@ Host this Next.js app and point an iframe at `/embed`. A local stand-in is [http
 
 Confirming in the iframe posts `{ type: "egrant:fill", payload }`. In production, eGrant would `POST` that payload to `/api/v1/applications/{id}/fill`. The same screen is a React component (`ExtractorApp`) if eGrant would rather mount it than use an iframe. Tag names are data in [backend/app/mapping/tags.json](backend/app/mapping/tags.json), so a real výzva dictionary can replace them without rewriting the pipeline.
 
+## Known limitations
+
+- Review agent sessions are kept in the memory of the API process. Restarting the API ends every open session, and only the 100 most recent sessions are kept. The extracted values are not lost: the screen still holds them, and starting the agent again continues from there. Running more than one API process would need the sessions in a shared store.
+
 ## API
 
 `GET /health` → `{ "status": "ok" }`
@@ -98,4 +102,4 @@ Confirming in the iframe posts `{ type: "egrant:fill", payload }`. In production
 
 `POST /agent/answer` with JSON `{ "session_id", "section_id", "item_id", "tag", "value" }`. `value` is what the person typed. The agent then chooses the next step.
 
-The API reads `backend/.env` on startup. That file is gitignored. Copy `backend/.env.example` and set `OPENAI_API_KEY`, `OPENROUTER_API_KEY`, and `AGENT_API_KEY` there. `AGENT_BASE_URL` defaults to `https://api.openai.com/v1` in the example, and `AGENT_MODEL` defaults to `gpt-4o-mini`. With no agent key, the same tools run in a fixed order: list the empty fields, ask for the first one, then wait. The person still presses confirm. The confirmed object is unchanged.
+The API reads `backend/.env` on startup. That file is gitignored. Copy `backend/.env.example` and set `AGENT_API_KEY` there; it is the only key the code reads. `AGENT_BASE_URL` defaults to `https://api.openai.com/v1` in the example, and `AGENT_MODEL` defaults to `gpt-4o-mini`. With no agent key, the same tools run in a fixed order: list the empty fields, ask for the first one, then wait. The person still presses confirm. The confirmed object is unchanged.

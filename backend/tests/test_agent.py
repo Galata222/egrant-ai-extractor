@@ -13,13 +13,16 @@ from app.agent import (
 )
 from app.main import app
 from app.schemas import Item, Root, Section, TagValue, Tree
+from app.validators import parse_date, parse_money
 
 
 def setup_function():
     reset_sessions()
 
 
-def _tag(name: str, label: str, value: str | None, required: bool = True) -> TagValue:
+def _tag(
+    name: str, label: str, value: str | None, required: bool = True, key: str | None = None
+) -> TagValue:
     return TagValue(
         tag=name,
         label=label,
@@ -27,6 +30,7 @@ def _tag(name: str, label: str, value: str | None, required: bool = True) -> Tag
         confidence=1 if value else 0,
         needs_review=value is None,
         required=required,
+        key=key,
     )
 
 
@@ -151,6 +155,93 @@ def test_empty_answer_is_refused(monkeypatch):
     with pytest.raises(ValueError, match="empty_value"):
         answer_session(started.session_id, focus.section_id, focus.item_id, focus.tag, "  ")
     assert _dic(_sessions[started.session_id].tree) is None
+
+
+def _tree_missing(key: str) -> Tree:
+    tag = _tag(f"doklad.{key}", key, None, key=key)
+    section = Section(id="doklad", title="Doklad", items=[Item(id="doklad", tags=[tag])])
+    return Tree(roots=[Root(id="vyuctovanie", sections=[section])])
+
+
+def _only_tag(session_id: str) -> TagValue:
+    return _sessions[session_id].tree.roots[0].sections[0].items[0].tags[0]
+
+
+@pytest.mark.parametrize(
+    ("key", "typed"),
+    [
+        ("ico", "00151654"),  # one digit off: the checksum fails
+        ("ico", "12345"),
+        ("issue_date", "31.02.2026"),  # no such day
+        ("total_gross", "tisíc eur"),
+        ("dic", "123"),
+    ],
+)
+def test_mistyped_value_is_refused_and_field_stays_empty(monkeypatch, key, typed):
+    monkeypatch.delenv("AGENT_API_KEY", raising=False)
+    started = start_session("doc-1", _tree_missing(key))
+    focus = started.focus
+    assert focus is not None
+    with pytest.raises(ValueError, match="invalid_value"):
+        answer_session(started.session_id, focus.section_id, focus.item_id, focus.tag, typed)
+    tag = _only_tag(started.session_id)
+    assert tag.value is None and tag.needs_review is True
+    # Still waiting for the same field, so the person can correct it and retry.
+    assert _sessions[started.session_id].focus == focus
+
+
+@pytest.mark.parametrize(
+    ("key", "typed", "stored"),
+    [
+        ("ico", "00 151 653", "00151653"),
+        ("dic", "2020215534", "2020215534"),
+        ("dic", "SK 2020215534", "SK2020215534"),
+        ("issue_date", "5. 3. 2026", parse_date("5. 3. 2026")),
+        ("total_gross", "1 481,47", parse_money("1 481,47 EUR")),
+        ("total_gross", "1200", parse_money("1200 EUR")),
+        ("supplier_name", "Ateliér Sever, s. r. o.", "Ateliér Sever, s. r. o."),
+    ],
+)
+def test_typed_value_is_checked_and_stored_like_an_extracted_one(monkeypatch, key, typed, stored):
+    monkeypatch.delenv("AGENT_API_KEY", raising=False)
+    assert stored is not None
+    started = start_session("doc-1", _tree_missing(key))
+    focus = started.focus
+    assert focus is not None
+    turn = answer_session(started.session_id, focus.section_id, focus.item_id, focus.tag, typed)
+    tag = _only_tag(turn.session_id)
+    assert turn.status == "ready"
+    assert tag.value == stored and tag.needs_review is False
+
+
+def test_field_without_a_key_is_kept_as_typed(monkeypatch):
+    monkeypatch.delenv("AGENT_API_KEY", raising=False)
+    started = start_session("doc-1", invoice_tree(None))
+    focus = started.focus
+    assert focus is not None
+    done = answer_session(started.session_id, focus.section_id, focus.item_id, focus.tag, "voľný text")
+    assert _dic(_sessions[done.session_id].tree) == "voľný text"
+
+
+def test_invalid_value_over_http_is_a_400(monkeypatch):
+    monkeypatch.delenv("AGENT_API_KEY", raising=False)
+    client = TestClient(app)
+    body = client.post(
+        "/agent/start", json={"document_id": "doc-1", "tree": _tree_missing("ico").model_dump()}
+    ).json()
+    focus = body["focus"]
+    refused = client.post(
+        "/agent/answer",
+        json={
+            "session_id": body["session_id"],
+            "section_id": focus["section_id"],
+            "item_id": focus["item_id"],
+            "tag": focus["tag"],
+            "value": "00151654",
+        },
+    )
+    assert refused.status_code == 400
+    assert refused.json()["detail"]["code"] == "invalid_value"
 
 
 def test_half_filled_line_is_missing():
