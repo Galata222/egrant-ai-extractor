@@ -1,0 +1,18 @@
+{
+  "name": "Sample invoice (scan, no text layer)",
+  "file": "fixtures/sample-invoice.png",
+  "expected": {
+    "dodavatel.nazov": "Ateliér Sever, s. r. o.",
+    "dodavatel.ico": "00151653",
+    "dodavatel.dic": null,
+    "faktura.cislo": "2026-0142",
+    "faktura.datum_vystavenia": "12.03.2026",
+    "faktura.datum_splatnosti": "26.03.2026",
+    "faktura.suma_bez_dph": "1234.56",
+    "faktura.suma_s_dph": "1481.47"
+  },
+  "items": [
+    ["Grafický návrh plagátu", "800.00"],
+    ["Tlač materiálov", "434.56"]
+  ]
+}

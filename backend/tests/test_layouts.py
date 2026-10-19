@@ -91,6 +91,32 @@ def test_side_by_side_with_one_ico_is_not_guessed():
     assert _values(lines)["ico"] is None
 
 
+def test_net_that_does_not_add_up_with_the_vat_is_left_empty():
+    values = _values(
+        [
+            "FAKTÚRA",
+            "Základ dane: 234,56 EUR",
+            "DPH 20 %: 246,91 EUR",
+            "Spolu s DPH: 1 481,47 EUR",
+        ]
+    )
+    assert values["total_net"] is None
+    assert values["total_gross"] == "1481.47"
+
+
+def test_net_that_matches_the_vat_and_the_gross_is_kept():
+    values = _values(
+        [
+            "FAKTÚRA",
+            "Základ dane: 1 234,56 EUR",
+            "DPH 20 %: 246,91 EUR",
+            "Spolu s DPH: 1 481,47 EUR",
+        ]
+    )
+    assert values["total_net"] == "1234.56"
+    assert values["total_gross"] == "1481.47"
+
+
 def test_total_without_vat_is_not_taken_as_the_gross_total():
     values = _values(["FAKTÚRA", "Spolu bez DPH: 500,00 €", "Spolu s DPH: 600,00 €"])
     assert values["total_net"] == "500.00"

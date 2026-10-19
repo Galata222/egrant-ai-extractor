@@ -43,6 +43,19 @@ def enforce_vat(net: Candidate, gross: Candidate) -> tuple[Candidate, Candidate]
     return net, gross
 
 
+def reconcile_net(net: Candidate, gross: Candidate, tax: str | None) -> Candidate:
+    """Drop a net total that cannot sit beside the printed VAT and gross total.
+
+    The replacement is not calculated. A misread base stays empty.
+    """
+    if tax is None or net.value is None or gross.value is None:
+        return net
+    gap = abs(Decimal(net.value) + Decimal(tax) - Decimal(gross.value))
+    if gap > Decimal("0.01"):
+        return empty()
+    return net
+
+
 def apply_threshold(candidate: Candidate, threshold: float) -> Candidate:
     if candidate.value is None or candidate.confidence < threshold:
         return empty()

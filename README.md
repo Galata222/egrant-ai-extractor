@@ -1,27 +1,47 @@
 # eGrant AI Data Extraction
 
-Detachable module for the FUTURE MAKERS hackathon. An applicant uploads an invoice, a receipt, or a contract. The FastAPI service reads it, keeps only values that pass the validators, and returns an eGrant tag tree. A grant manager checks the split-screen form and confirms the JSON. eGrant's own backend is not modified.
+Detachable module for the FUTURE MAKERS hackathon. A grant manager reviews one uploaded document and confirms the values before they can be written into an eGrant application. eGrant’s own backend is not modified.
 
 The requirements live in [docs/SRS.md](docs/SRS.md). The JSON contract lives in [docs/egrant-fill.md](docs/egrant-fill.md).
 
-## How it stays honest
+## Problem
+
+Settlement of a grant means typing invoice, receipt, and contract details into a nested eGrant form. The person doing that work is a clerk, often reading Slovak documents, including a phone photo of a receipt. A wrong IČO, date, or amount can land in a legal settlement. An empty field that a person fills from the paper is a safe result. A guessed value is not.
+
+## Use case
+
+1. Someone uploads a PDF, JPG, PNG, or XLSX, up to 10 MB. The screen shows the file and waits.
+2. They press **Pokračovať**. The service reads the file and returns an eGrant tag tree.
+3. A split screen shows the document beside the form. Empty and invalid fields are marked in amber, with a sentence that says what shape the value should have.
+4. A review agent asks for the next empty required field. It does not type the value. The person does.
+5. **Potvrdiť údaje** stays blocked until the required fields are present and well formed. Confirming builds `egrant-fill.v1`. In an iframe, that object is posted to the parent window. eGrant would then `POST` it to `/api/v1/applications/{id}/fill`.
+
+## Solution
 
 A field is returned only when a validator accepts it:
 
-- IČO is 8 digits and passes the Slovak/Czech checksum.
+- IČO is 8 digits and passes the Slovak/Czech checksum. The supplier IČO is taken from the supplier block, not from the customer block.
 - DIČ / IČ DPH is `SK` plus 10 digits, as printed on the document.
 - Dates are real calendar dates.
 - Amounts use Slovak money (`1 234,56`) and are stored as decimal strings.
 - If the gross total is lower than the net total, both totals become `null`.
-- Supplier IČO is taken from the supplier block, not from the customer block.
 
-The confidence threshold defaults to `0.8` (`CONFIDENCE_THRESHOLD`). Each score is calculated from the label and the validator, and blended with the OCR or Donut token probability when that read exists. Below `0.8`, the value is `null`. A bare total with no currency is one of those weak reads. The manager UI does not show scores. It marks blank fields with the hint "Neznámy údaj - doplňte ručne".
+The confidence threshold defaults to `0.8` (`CONFIDENCE_THRESHOLD`). Below that, the value is `null`. The manager screen does not show scores.
 
-Digital PDFs use the text layer, which is exact and finishes well under 15 seconds. The organizer OCR image can fill a gap when `EGRANT_OCR_URL` is `http://127.0.0.1:9010/ocr-upload` (`trayvor/ocr-api-slk:v0.0.7`). A value the text layer already accepted stays. Photos and scanned PDFs go through EasyOCR (`sk` + `en`). When PyTorch and Transformers are installed, those pages also run Donut (`naver-clova-ix/donut-base-finetuned-cord-v2`). Donut may fill a field the anchored read left empty, after the same validators. If the two reads disagree, the field stays `null`. Donut does not run on a digital PDF, so a receipt-model guess cannot erase a checked invoice. Set `ENABLE_DONUT=false` to skip it. Install the model extra with [backend/requirements-donut.txt](backend/requirements-donut.txt). The time budget is `DONUT_BUDGET_SECONDS` (default 8), and the whole page stops at 15 seconds.
+What reads the file:
 
-## Run on Windows
+- A digital PDF uses its text layer. That read is exact and stays well under 15 seconds. Donut does not run, so a receipt model cannot replace a checked invoice value.
+- A photo or scan has no text layer. EasyOCR (`sk` + `en`) reads it. When PyTorch and Transformers are installed, Donut (`naver-clova-ix/donut-base-finetuned-cord-v2`) may fill a field the OCR read left empty, after the same validators. If the two reads disagree, the field stays `null`. Set `ENABLE_DONUT=false` to skip it. The Donut budget is `DONUT_BUDGET_SECONDS` (default 8), and the page stops at 15 seconds.
+- The organizer OCR image can fill a gap when `EGRANT_OCR_URL` is `http://127.0.0.1:9010/ocr-upload` (`trayvor/ocr-api-slk:v0.0.7`). This module does not send `force_ocr`. A value the text layer already accepted stays.
+- An XLSX settlement is read as a table, not as a photo.
 
-From the repository root, in two terminals.
+The review agent is a fixed sequence when `AGENT_API_KEY` is empty: list the empty required fields, ask for the first one, then wait. A typed value goes through the same validators as an extracted one. The person still presses confirm.
+
+Without a mapping, the tags come from [backend/app/mapping/tags.json](backend/app/mapping/tags.json). `POST /extract` accepts an optional `mapping` string when a real form export should replace those tags. The manager screen uses the built-in tags.
+
+## Startup procedure
+
+From the repository root, in two terminals. These steps are for Windows.
 
 Backend:
 
@@ -32,7 +52,15 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-`pip install -r requirements.txt` includes PyTorch and EasyOCR. Those wheels are large. The sample PDF and the unit tests do not download model weights. Image OCR downloads EasyOCR language data on the first photo.
+`pip install -r requirements.txt` includes PyTorch and EasyOCR. Those wheels are large. The sample PDF and the text-layer tests do not download model weights. The first photo downloads EasyOCR language data.
+
+Optional Slovak OCR container, only when a photo should use the organizer image:
+
+```powershell
+docker run -d --name ocr-api -p 127.0.0.1:9010:8000 trayvor/ocr-api-slk:v0.0.7
+```
+
+Copy [backend/.env.example](backend/.env.example) to `backend/.env`. That file is gitignored. Leave `AGENT_API_KEY` empty to keep the agent on this machine. Set `EGRANT_OCR_URL=http://127.0.0.1:9010/ocr-upload` only when the container above is running. The API reads `.env` on startup and does not override variables already set in the process.
 
 Frontend:
 
@@ -42,7 +70,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The button **Načítať ukážkovú faktúru** sends [backend/fixtures/sample-invoice.pdf](backend/fixtures/sample-invoice.pdf). DIČ is missing on purpose, so that field stays empty until a person fills it.
+Open [http://localhost:3000](http://localhost:3000). In the header, **Ukážka** loads [backend/fixtures/sample-invoice.pdf](backend/fixtures/sample-invoice.pdf). **Pokračovať** starts the read. DIČ is missing on that invoice on purpose, so the VAT ID stays empty until a person fills it.
 
 The browser talks only to Next.js. [frontend/app/api/extract/route.ts](frontend/app/api/extract/route.ts) forwards `FormData` to FastAPI. Override the target with `API_URL` (see [frontend/.env.example](frontend/.env.example)).
 
@@ -60,7 +88,9 @@ cd backend
 .\venv\Scripts\python.exe -m scorecard.run
 ```
 
-The scorecard reads every JSON file in [backend/scorecard/cases](backend/scorecard/cases) and compares the extractor's answer with the values a person read from the document. It prints how many values were filled correctly, how many were left for a person, and how many were wrong. A blank is a safe miss. A wrong value is the failure to drive to zero, and `--fail-on-wrong` exits with 1 when there is one.
+The scorecard reads every JSON file in [backend/scorecard/cases](backend/scorecard/cases) and compares the extractor’s answer with the values a person read from the document. It prints how many values were filled correctly, how many were left for a person, and how many were wrong. A blank is a safe miss. A wrong value is the failure to drive to zero, and `--fail-on-wrong` exits with 1 when there is one.
+
+`01-sample-invoice-pdf.json` scores the digital PDF. `06-sample-invoice-scan.json` scores the same invoice as [backend/fixtures/sample-invoice.png](backend/fixtures/sample-invoice.png), which has no text layer, so the photo reader runs. The expected values are what is printed, including `null` for the VAT ID that is not on the page. A net total that does not add up with the printed VAT and the gross total is left empty instead of shown. A line that has an amount but no reliable description is left for the person and is not counted as a wrong row.
 
 To add a document, copy a case file and change it. `file` is a path inside `backend` (PDF, JPG, PNG or XLSX). `lines` can be used instead for plain text. `expected` maps each tag to its value in the form the API returns: dates as `DD.MM.YYYY`, amounts as `1234.56`. Write `null` for a value that is not printed on the document, so that an invented value is counted as wrong. `items` lists each row as `[text, amount]`.
 
@@ -70,6 +100,31 @@ Regenerate the sample invoice:
 cd backend
 .\venv\Scripts\python.exe fixtures\build_sample.py
 ```
+
+## Technologies used
+
+- Next.js 16, React 19, and Tailwind CSS 4 for the manager screen.
+- FastAPI and Pydantic for `POST /extract`, `POST /agent/start`, and `POST /agent/answer`.
+- PyMuPDF for the text layer and the first-page preview of a PDF.
+- EasyOCR (`sk` + `en`) for a photo or scan.
+- Optional Donut (`naver-clova-ix/donut-base-finetuned-cord-v2`) on pages that have no text layer.
+- Optional organizer OCR container `trayvor/ocr-api-slk:v0.0.7`.
+- openpyxl for an XLSX settlement.
+- An in-process rules agent. An OpenAI-compatible chat endpoint is used only when `AGENT_API_KEY` is set.
+
+## UX/UI
+
+The screen is the design. There is no separate design file. It is Slovak first, with an English switch. The upload step shows the file and does not extract until **Pokračovať**. The review step is a document on one side and the form on the other. An empty required field names what is missing (for example an IČO of 8 digits, or a VAT ID of `SK` plus 10 digits). A value in the wrong shape is rejected as it is typed, and confirm names that field. Body text is at least 16px, and **A+** raises it. Light and dark themes are both available. After confirm, the clerk sees the values first. The JSON is behind a disclosure.
+
+## Demo
+
+Use this path for a 10-minute jury demo. Say this about the read: a digital PDF keeps its text layer, so the model is not asked to guess over text that is already exact.
+
+1. Open [http://localhost:3000](http://localhost:3000). Press **Ukážka**, then **Pokračovať**.
+2. Show the filled supplier, IČO `00151653`, invoice number, both dates, and both totals. Those values are printed on the invoice.
+3. Show the empty VAT ID. The invoice does not print a DIČ, so the field stays empty and the agent asks for it. Confirm stays blocked.
+4. Type a VAT ID that is not `SK` plus 10 digits and show the warning. Then type `SK1020215534`. That number is the reviewer’s entry for the rehearsal. It is not on the document, and the extractor did not produce it.
+5. Press **Potvrdiť údaje**. The heading is **Údaje sú pripravené pre eGrant**. Open the technical disclosure only if someone asks for the JSON.
 
 ## Embed in eGrant
 
@@ -86,11 +141,18 @@ Host this Next.js app and point an iframe at `/embed`. A local stand-in is [http
 </script>
 ```
 
-Confirming in the iframe posts `{ type: "egrant:fill", payload }`. In production, eGrant would `POST` that payload to `/api/v1/applications/{id}/fill`. The same screen is a React component (`ExtractorApp`) if eGrant would rather mount it than use an iframe. Tag names are data in [backend/app/mapping/tags.json](backend/app/mapping/tags.json), so a real výzva dictionary can replace them without rewriting the pipeline.
+Confirming in the iframe posts `{ type: "egrant:fill", payload }`. In production, eGrant would `POST` that payload to `/api/v1/applications/{id}/fill`. The same screen is a React component (`ExtractorApp`) if eGrant would rather mount it than use an iframe.
 
 ## Known limitations
 
-- Review agent sessions are kept in the memory of the API process. Restarting the API ends every open session, and only the 100 most recent sessions are kept. The extracted values are not lost: the screen still holds them, and starting the agent again continues from there. Running more than one API process would need the sessions in a shared store.
+- Confirm builds JSON and, inside an iframe, posts it to the parent. This module does not call eGrant and does not write the application.
+- Only the first page of a PDF is read.
+- Donut is a receipt model, not a model trained on Slovak invoices. It does not run on a digital PDF. On a photo it may leave a field empty when it disagrees with OCR or when its confidence is below `0.8`.
+- The organizer OCR container is a separate process. With `EGRANT_OCR_URL` unset, a photo uses EasyOCR and, when installed, Donut.
+- The manager screen always uses the sample tags in `tags.json`. A real form export is accepted only as the optional `mapping` field on `POST /extract`.
+- Review agent sessions live in the memory of the API process. A restart ends them, and only the 100 most recent sessions are kept. The form on screen still holds the values. More than one API process would need a shared store.
+- The first photo download of EasyOCR language data, and a first Donut run, are slower than the text layer. The text-layer budget remains 15 seconds.
+- There is no login. The prototype is meant to run beside eGrant, not as a public service.
 
 ## API
 

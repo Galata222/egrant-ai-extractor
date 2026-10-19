@@ -1,10 +1,11 @@
 import re
 from dataclasses import dataclass, field
+from decimal import Decimal
 
 from PIL import Image
 
 from app.confidence import blend, date_anchor, dic_anchor, ico_anchor, money_anchor, name_anchor, number_anchor
-from app.gate import Candidate, accept, empty
+from app.gate import Candidate, accept, empty, reconcile_net
 from app.ingest import IngestedPage
 from app.validators import (
     fold,
@@ -181,6 +182,7 @@ class Draft:
     fields: dict[str, Candidate] = field(default_factory=dict)
     lines: list[LineCandidate] = field(default_factory=list)
     kind: str = "invoice"
+    tax: str | None = None
 
 
 def lines_from_page(page: IngestedPage) -> list[tuple[str, float | None]]:
@@ -349,20 +351,19 @@ def _supplier_region(lines: list[str], contract: bool = False) -> list[str]:
 
 def _extract_invoice(lines: list[str], scores: list[float | None], kind: str) -> Draft:
     supplier = _supplier_region(lines)
-    return Draft(
-        kind=kind,
-        fields={
-            "supplier_name": _supplier_name(supplier, scores, lines),
-            "ico": _anchored_ico(supplier, scores, lines),
-            "dic": _anchored_dic(supplier, scores, lines),
-            "invoice_number": _invoice_number(lines, scores),
-            "issue_date": _search_date(lines, scores, _ISSUE),
-            "due_date": _search_date(lines, scores, _DUE),
-            "total_net": _search_net(lines, scores),
-            "total_gross": _search_gross(lines, scores),
-        },
-        lines=_line_items(lines, scores),
-    )
+    tax = _tax_total(lines)
+    fields = {
+        "supplier_name": _supplier_name(supplier, scores, lines),
+        "ico": _anchored_ico(supplier, scores, lines),
+        "dic": _anchored_dic(supplier, scores, lines),
+        "invoice_number": _invoice_number(lines, scores),
+        "issue_date": _search_date(lines, scores, _ISSUE),
+        "due_date": _search_date(lines, scores, _DUE),
+        "total_net": _search_net(lines, scores),
+        "total_gross": _search_gross(lines, scores),
+    }
+    fields["total_net"] = reconcile_net(fields["total_net"], fields["total_gross"], tax)
+    return Draft(kind=kind, fields=fields, lines=_line_items(lines, scores), tax=tax)
 
 
 def _extract_statement(lines: list[str], scores: list[float | None]) -> Draft:
@@ -501,6 +502,27 @@ def _invoice_number(lines: list[str], scores: list[float | None]) -> Candidate:
     if labelled.value is not None:
         return labelled
     return _search_number(lines[:3], scores, _INVOICE_TITLE)
+
+
+_TAX_SKIP = ("zaklad", "bez dph", "s dph", "spolu", "celkom", "suma", "total", "k uhrade")
+
+
+def _tax_total(lines: list[str]) -> str | None:
+    amounts: list[Decimal] = []
+    for line in lines:
+        folded = fold(line)
+        if "dph" not in folded and "vat" not in folded:
+            continue
+        if any(skip in folded for skip in _TAX_SKIP):
+            continue
+        value = parse_money(re.sub(r"\d+(?:[.,]\d+)?\s*%", " ", line))
+        if value is None:
+            continue
+        amounts.append(Decimal(value))
+    if not amounts:
+        return None
+    total = sum(amounts, Decimal("0")).quantize(Decimal("0.01"))
+    return f"{total:.2f}"
 
 
 def _search_net(lines: list[str], scores: list[float | None]) -> Candidate:

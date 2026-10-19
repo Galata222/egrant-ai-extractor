@@ -166,6 +166,8 @@ def _score_items(
         unmatched.remove(found)
         rows.append(Row("položka", wanted, wanted, CORRECT))
     for description, amount in unmatched:
+        if description is None or amount is None:
+            continue
         rows.append(Row("položka", None, f"{description} | {amount}", WRONG))
     return rows
 

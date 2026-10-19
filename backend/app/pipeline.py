@@ -10,7 +10,7 @@ from app.donut_extract import enabled as donut_enabled
 from app.donut_extract import extract_donut
 from app.egrant_ocr import configured as egrant_ocr_configured
 from app.egrant_ocr import read_text as egrant_ocr_text
-from app.gate import Candidate, empty, enforce_vat, merge_candidate
+from app.gate import Candidate, empty, enforce_vat, merge_candidate, reconcile_net
 from app.ingest import ingest
 from app.mapping.engine import to_response
 from app.mapping.form_export import Mapping
@@ -121,7 +121,7 @@ def merge_drafts(ocr: Draft, donut: Draft, threshold: float) -> Draft:
         for key in keys
     }
     net, gross = enforce_vat(fields.get("total_net", empty()), fields.get("total_gross", empty()))
-    fields["total_net"] = net
+    fields["total_net"] = reconcile_net(net, gross, ocr.tax)
     fields["total_gross"] = gross
     # Rows stay with the anchored read. Donut rows are used only when that read found none.
     lines = ocr.lines or donut.lines

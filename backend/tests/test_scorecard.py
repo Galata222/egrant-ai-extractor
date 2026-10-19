@@ -36,6 +36,28 @@ def test_fields_are_scored_against_the_expected_tags():
     assert verdicts["faktura.cislo:2026-9999"] == WRONG
 
 
+def test_half_read_line_is_not_counted_as_a_wrong_item():
+    response = to_response(extract_fields(LINES), 0.8, "case")
+    # Drop the description the way a low-confidence read does, and keep the amount.
+    item = response.tree.roots[0].sections[-1].items[0]
+    item.tags[0].value = None
+    verdicts = {
+        f"{row.name}:{row.expected or row.actual}": row.verdict
+        for row in score(
+            {
+                "items": [
+                    ["Grafický návrh plagátu", "800.00"],
+                    ["Tlač materiálov", "434.56"],
+                ]
+            },
+            response,
+        )
+    }
+    assert verdicts["položka:Grafický návrh plagátu | 800.00"] == MISSED
+    assert verdicts["položka:Tlač materiálov | 434.56"] == CORRECT
+    assert all(verdict != WRONG for verdict in verdicts.values())
+
+
 def test_line_items_are_matched_by_text_and_amount():
     verdicts = _verdicts(
         {
