@@ -54,7 +54,9 @@ export function invalidFormat(tag: string, value: string | null): boolean {
   if (!text) return false;
   const kind = guideKind(tag);
   if (kind === "ico") return parseIco(text) === null;
-  if (kind === "dic") return parseDic(text) === null;
+  // A person types the tax number as printed: ten digits, with or without "SK".
+  // The server accepts both since the agent change; a document read still needs SK.
+  if (kind === "dic") return parseDic(text) === null && !/^\d{10}$/.test(text.replace(/\s/g, ""));
   if (kind === "date") return parseDate(text) === null;
   if (kind === "amount") return parseMoney(text) === null;
   if (isNumberTag(tag)) return parseInvoiceNumber(text) === null;
