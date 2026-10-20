@@ -56,7 +56,9 @@ export function invalidFormat(tag: string, value: string | null): boolean {
   if (kind === "ico") return parseIco(text) === null;
   if (kind === "dic") return parseDic(text) === null;
   if (kind === "date") return parseDate(text) === null;
-  if (kind === "amount") return parseMoney(text) === null;
+  // A whole amount needs a currency when it is read from a document, but a person
+  // typing into an amount field has already said it is money ("1200").
+  if (kind === "amount") return parseMoney(text) === null && parseMoney(`${text} EUR`) === null;
   if (isNumberTag(tag)) return parseInvoiceNumber(text) === null;
   if (isNameTag(tag)) return parseName(text) === null;
   return false;
