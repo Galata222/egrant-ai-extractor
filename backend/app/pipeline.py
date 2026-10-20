@@ -12,7 +12,7 @@ from app.egrant_ocr import configured as egrant_ocr_configured
 from app.egrant_ocr import read_text as egrant_ocr_text
 from app.gate import Candidate, empty, enforce_vat, merge_candidate, reconcile_net
 from app.ingest import ingest
-from app.mapping.engine import to_response
+from app.mapping.engine import load_dictionary, to_response
 from app.mapping.form_export import Mapping
 from app.ocr_extract import Draft, extract_fields, lines_from_page
 from app.schemas import ExtractionResponse
@@ -42,7 +42,10 @@ def extract_document(
     started = time.perf_counter()
     page = ingest(data, filename)
     threshold = confidence_threshold()
-    external = _external_draft(data, filename)
+    # A scan has no text layer, so the organizer OCR is asked first. A digital PDF
+    # is read locally first, and the OCR is asked only when that read left a gap:
+    # the call can take up to 45 seconds and sends the whole document out.
+    external = _external_draft(data, filename) if page.embedded_text is None else None
     had_text = page.embedded_text is not None
     if page.embedded_text is None and external is not None and not _draft_empty(external):
         ocr_draft = external
@@ -51,8 +54,10 @@ def extract_document(
         pairs = lines_from_page(page)
         had_text = had_text or bool(pairs)
         ocr_draft = extract_fields([text for text, _score in pairs], [score for _text, score in pairs])
-        if page.embedded_text is not None and external is not None:
-            ocr_draft = fill_gaps(ocr_draft, external, threshold)
+        if page.embedded_text is not None and has_gap(ocr_draft, threshold):
+            external = _external_draft(data, filename)
+            if external is not None:
+                ocr_draft = fill_gaps(ocr_draft, external, threshold)
     donut_draft = Draft()
     # The vision model reads pages that have no text layer. A digital PDF keeps
     # the text layer so a receipt model cannot erase a checked value, and the
@@ -90,6 +95,18 @@ def fill_gaps(primary: Draft, secondary: Draft, threshold: float) -> Draft:
     text_found = any(candidate.value for candidate in primary.fields.values()) or bool(primary.lines)
     kind = primary.kind if text_found or primary.kind != "invoice" else secondary.kind or "invoice"
     return Draft(fields=fields, lines=lines, kind=kind)
+
+
+def has_gap(draft: Draft, threshold: float) -> bool:
+    """True when a field of this document kind, or its line items, is not read with confidence."""
+    profiles = load_dictionary()["profiles"]
+    profile = profiles.get(draft.kind, profiles["invoice"])
+    for section in profile["sections"]:
+        for field in section["fields"]:
+            candidate = draft.fields.get(field["key"], empty())
+            if candidate.value is None or candidate.confidence < threshold:
+                return True
+    return "line_items" in profile and not draft.lines
 
 
 def _keep_checked(primary: Candidate, secondary: Candidate, threshold: float) -> Candidate:
