@@ -20,3 +20,11 @@ def test_generated_invoice_roundtrip():
     assert values["faktura.suma_bez_dph"] == "1234.56"
     assert values["faktura.suma_s_dph"] == "1481.47"
     assert "dodavatel.dic" in response.needs_review
+
+
+def test_building_the_sample_again_changes_no_file():
+    first = [path.read_bytes() for path in build()]
+    stamps = [path.stat().st_mtime_ns for path in build()]
+    second = build()
+    assert [path.read_bytes() for path in second] == first
+    assert [path.stat().st_mtime_ns for path in second] == stamps  # not even rewritten
