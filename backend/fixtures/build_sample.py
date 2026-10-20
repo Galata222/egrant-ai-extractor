@@ -1,4 +1,3 @@
-import shutil
 import sys
 from pathlib import Path
 
@@ -35,14 +34,21 @@ def build() -> tuple[Path, Path]:
     pdf_path = FIXTURE_DIR / "sample-invoice.pdf"
     png_path = FIXTURE_DIR / "sample-invoice.png"
     document.subset_fonts()
-    document.save(pdf_path, garbage=4, deflate=True)
+    # no_new_id: PyMuPDF otherwise writes a new random document ID on every save,
+    # so each test run changed the committed PDFs although the content was the same.
+    _write_if_changed(pdf_path, document.tobytes(garbage=4, deflate=True, no_new_id=True))
     pixmap = page.get_pixmap(matrix=pymupdf.Matrix(2, 2), alpha=False)
-    pixmap.save(png_path)
+    _write_if_changed(png_path, pixmap.tobytes("png"))
     public = ROOT / "frontend" / "public" / "samples"
     public.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(pdf_path, public / "sample-invoice.pdf")
+    _write_if_changed(public / "sample-invoice.pdf", pdf_path.read_bytes())
     document.close()
     return pdf_path, png_path
+
+
+def _write_if_changed(path: Path, data: bytes) -> None:
+    if not path.is_file() or path.read_bytes() != data:
+        path.write_bytes(data)
 
 
 if __name__ == "__main__":
