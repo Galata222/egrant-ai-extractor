@@ -251,3 +251,66 @@ def test_empty_ocr_response_keeps_the_text_layer(monkeypatch):
     response = extract_document(pdf_path.read_bytes(), pdf_path.name)
     assert _tag(response, "dodavatel.ico").value == "00151653"
     assert _tag(response, "dodavatel.dic").value is None
+
+
+def _text_pdf(lines: list[str]) -> bytes:
+    import pymupdf
+
+    from fixtures.build_sample import font_path
+
+    document = pymupdf.open()
+    page = document.new_page(width=595, height=842)
+    page.insert_font(fontname="sample", fontfile=str(font_path()))
+    for row, line in enumerate(lines):
+        page.insert_text((48, 56 + 28 * row), line, fontname="sample", fontsize=13)
+    data = document.tobytes()
+    document.close()
+    return data
+
+
+def test_complete_text_layer_is_not_sent_to_the_ocr(monkeypatch):
+    from fixtures.invoice_text import LINES
+
+    calls: list[str] = []
+    monkeypatch.setenv("EGRANT_OCR_URL", "http://ocr.example/text")
+    monkeypatch.setattr("app.pipeline.egrant_ocr_text", lambda _data, name: calls.append(name) or "")
+    complete = list(LINES)
+    complete.insert(complete.index("IČO: 00151653") + 1, "DIČ: SK2020215534")
+    response = extract_document(_text_pdf(complete), "faktura.pdf")
+    assert _tag(response, "dodavatel.dic").value == "SK2020215534"
+    assert calls == []
+
+
+def test_text_layer_with_a_gap_still_asks_the_ocr(monkeypatch):
+    from fixtures.invoice_text import LINES
+
+    calls: list[str] = []
+    monkeypatch.setenv("EGRANT_OCR_URL", "http://ocr.example/text")
+    monkeypatch.setattr("app.pipeline.egrant_ocr_text", lambda _data, name: calls.append(name) or "")
+    extract_document(_text_pdf(LINES), "faktura.pdf")  # the sample prints no DIČ
+    assert calls == ["faktura.pdf"]
+
+
+def test_gap_means_an_unread_field_or_missing_line_items():
+    from app.gate import Candidate
+    from app.ocr_extract import Draft
+    from app.pipeline import has_gap
+
+    def invoice(dic: Candidate, lines: bool = True) -> Draft:
+        fields = {
+            "supplier_name": Candidate("Ateliér Sever, s. r. o.", 0.93),
+            "ico": Candidate("00151653", 0.97),
+            "dic": dic,
+            "invoice_number": Candidate("2026-0142", 0.93),
+            "issue_date": Candidate("12.03.2026", 0.96),
+            "due_date": Candidate("26.03.2026", 0.96),
+            "total_net": Candidate("1234.56", 0.96),
+            "total_gross": Candidate("1481.47", 0.96),
+        }
+        rows = extract_fields(["Položky", "Tlač materiálov 434,56"]).lines if lines else []
+        return Draft(fields=fields, lines=rows, kind="invoice")
+
+    assert not has_gap(invoice(Candidate("SK2020215534", 0.95)), 0.8)
+    assert has_gap(invoice(Candidate(None, 0.0)), 0.8)
+    assert has_gap(invoice(Candidate("SK2020215534", 0.5)), 0.8)  # read, but not trusted
+    assert has_gap(invoice(Candidate("SK2020215534", 0.95), lines=False), 0.8)
