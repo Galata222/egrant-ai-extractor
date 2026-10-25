@@ -86,6 +86,8 @@ function LineItemTable({
   const sample = items[0];
   const sampleParts = sample ? lineParts(sample) : null;
   const showFiles = items.some((item) => lineParts(item).file);
+  const showOrders = items.some((item) => lineParts(item).order);
+  const showProofs = items.some((item) => lineParts(item).proof);
   const descriptionLabel = sampleParts?.description
     ? (copy.tags[sampleParts.description.tag] ?? sampleParts.description.label)
     : copy.tags.TABLE_ITEM_STRING;
@@ -95,6 +97,8 @@ function LineItemTable({
   const fileLabelText = sampleParts?.file
     ? (copy.tags[sampleParts.file.tag] ?? sampleParts.file.label)
     : copy.tags["doklad.faktura"];
+  const orderLabelText = copy.tags["doklad.objednavka"] ?? "Objednávka";
+  const proofLabelText = copy.tags["doklad.plnenie"] ?? "Plnenie";
   return (
     <div className="max-h-[28rem] overflow-auto">
       <table className="w-full border-collapse text-left">
@@ -103,6 +107,8 @@ function LineItemTable({
             <th className="px-1 py-2 font-semibold">{descriptionLabel}</th>
             <th className="px-1 py-2 font-semibold">{amountLabel}</th>
             {showFiles ? <th className="px-1 py-2 font-semibold">{fileLabelText}</th> : null}
+            {showOrders ? <th className="px-1 py-2 font-semibold">{orderLabelText}</th> : null}
+            {showProofs ? <th className="px-1 py-2 font-semibold">{proofLabelText}</th> : null}
             <th className="px-1 py-2">
               <span className="sr-only">{copy.actions}</span>
             </th>
@@ -110,7 +116,7 @@ function LineItemTable({
         </thead>
         <tbody>
           {items.map((item) => {
-            const { description, amount, file: invoice } = lineParts(item);
+            const { description, amount, file: invoice, order, proof } = lineParts(item);
             return (
               <tr key={item.id} className="align-top">
                 <td className="px-1 py-2">
@@ -137,9 +143,17 @@ function LineItemTable({
                 </td>
                 {showFiles ? (
                   <td className="px-1 py-2">
-                    <p className="pt-2 text-base break-all" title={invoice?.value ?? undefined}>
-                      {fileLabel(invoice?.value ?? null)}
-                    </p>
+                    <FileLink value={invoice?.value ?? null} />
+                  </td>
+                ) : null}
+                {showOrders ? (
+                  <td className="px-1 py-2">
+                    <FileLink value={order?.value ?? null} />
+                  </td>
+                ) : null}
+                {showProofs ? (
+                  <td className="px-1 py-2">
+                    <FileLink value={proof?.value ?? null} />
                   </td>
                 ) : null}
                 <td className="px-1 py-2">
@@ -161,9 +175,12 @@ function LineItemTable({
 }
 
 function lineParts(item: { tags: TagValue[] }) {
-  const file = item.tags.find((tag) => tag.tag === "doklad.faktura" || Boolean(tag.value && tag.value.includes("/file/")));
-  const visible = item.tags.filter((tag) => tag !== file && !isFileId(tag, item.tags));
-  return { description: visible[0], amount: visible[1], file };
+  const file = item.tags.find((tag) => tag.tag === "doklad.faktura" || tag.tag.endsWith(".faktura"));
+  const order = item.tags.find((tag) => tag.tag === "doklad.objednavka" || tag.tag.endsWith(".objednavka"));
+  const proof = item.tags.find((tag) => tag.tag === "doklad.plnenie" || tag.tag.endsWith(".plnenie"));
+  const links = new Set([file, order, proof].filter((tag) => tag !== undefined));
+  const visible = item.tags.filter((tag) => !links.has(tag) && !isFileId(tag, item.tags));
+  return { description: visible[0], amount: visible[1], file, order, proof };
 }
 
 function isFileId(tag: TagValue, tags: TagValue[]): boolean {
@@ -171,10 +188,28 @@ function isFileId(tag: TagValue, tags: TagValue[]): boolean {
   return Boolean(tag.value && /^\d+$/.test(tag.value) && tags.some((item) => item.value?.includes("/file/")));
 }
 
+function FileLink({ value }: { value: string | null }) {
+  if (!value) return null;
+  return (
+    <p className="pt-2 text-base break-all" title={value}>
+      {fileLabel(value)}
+    </p>
+  );
+}
+
 function fileLabel(value: string | null): string {
   if (!value) return "";
-  const match = value.match(/\/file\/([^/\s]+)/i);
-  return match?.[1] ?? value;
+  return value
+    .split(";")
+    .map((part) => {
+      const text = part.trim();
+      const stored = text.match(/\/file\/([^/\s]+)/i);
+      if (stored) return stored[1];
+      const name = text.split("?")[0]?.split("/").pop();
+      return name || text;
+    })
+    .filter(Boolean)
+    .join(", ");
 }
 
 function isAgentFocus(focus: AgentField | null, sectionId: string, itemId: string, tag: string) {

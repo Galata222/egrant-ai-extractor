@@ -68,7 +68,7 @@ A contract uses `zmluva.cislo`, `zmluva.datum_uzavretia`, `zmluva.datum_ucinnost
 
 A bank statement uses `vypis.datum` (booking date), `vypis.protistrana` (counterparty), and `vypis.suma` (amount). A missing label stays `null`.
 
-A settlement spreadsheet keeps each row. The invoice column is stored as the full `/file/2457463.pdf/...` path on `doklad.faktura`. The numeric id `2457463` is stored on `doklad.subor_id`, which is the id `file_link` can turn into a download later. This module does not invent a host name.
+A settlement spreadsheet keeps each row. The invoice column (`Faktúra` or `Fa`) is stored in full on `doklad.faktura`. An eGrant path `/file/2457463.pdf/...` also stores `2457463` on `doklad.subor_id`. A Dropbox link is stored as the link and does not invent that id. `Objednávka` is stored on `doklad.objednavka` and `Plnenie` on `doklad.plnenie`. An order link is not used as the invoice.
 
 Amounts are decimal strings (`1234.56`). Dates are `DD.MM.YYYY`. IČO is 8 digits with a valid checksum. DIČ / IČ DPH is `SK` plus 10 digits. Anything that fails validation is `null`.
 

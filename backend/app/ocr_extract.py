@@ -175,6 +175,8 @@ class LineCandidate:
     amount: Candidate
     invoice_file: Candidate = field(default_factory=empty)
     file_id: Candidate = field(default_factory=empty)
+    order_file: Candidate = field(default_factory=empty)
+    proof_file: Candidate = field(default_factory=empty)
 
 
 @dataclass

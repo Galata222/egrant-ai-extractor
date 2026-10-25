@@ -69,6 +69,42 @@ def test_settlement_keeps_each_stated_row_and_the_sum():
     assert "dodavatel.ico" not in {field.tag for section in response.tree.roots[0].sections for item in section.items for field in item.tags}
 
 
+def test_fa_column_keeps_the_invoice_link_apart_from_the_order_and_the_proof():
+    data = _workbook_with_header(
+        ["Číslo účt. dokladu", "Zo dňa", "Dodávateľ", "Predmet dodávky", "Suma", "Objednávka", "Fa", "Plnenie"],
+        [
+            [
+                "63032014",
+                "2025-01-01",
+                "Paddle.com Market Ltd",
+                "Plausible Analytics",
+                34.8,
+                "https://www.dropbox.com/scl/fi/order/163898047937040.pdf?dl=1",
+                "https://www.dropbox.com/scl/fi/invoice/163896723424112.pdf?dl=1",
+                "https://www.dropbox.com/scl/fi/proof/163905123176246.pdf?dl=1;https://www.dropbox.com/scl/fi/proof/163912886105139.pdf?dl=1",
+            ]
+        ],
+    )
+    response = to_response(extract_xlsx(data)[0], 0.8, "sheet-fa")
+    item = response.tree.roots[0].sections[-1].items[0]
+    tags = {field.tag: field.value for field in item.tags}
+    assert tags["doklad.faktura"] == "https://www.dropbox.com/scl/fi/invoice/163896723424112.pdf?dl=1"
+    assert tags["doklad.objednavka"].endswith("/163898047937040.pdf?dl=1")
+    assert "163912886105139.pdf" in tags["doklad.plnenie"]
+    assert "doklad.subor_id" not in tags
+
+
+def _workbook_with_header(header: list[str], rows: list[list]) -> bytes:
+    book = openpyxl.Workbook()
+    sheet = book.active
+    sheet.append(header)
+    for row in rows:
+        sheet.append(row)
+    buffer = io.BytesIO()
+    book.save(buffer)
+    return buffer.getvalue()
+
+
 def test_extract_document_accepts_the_workbook():
     data = _workbook(
         [["1", "faktúra", "2025-01-02", "zmluva", "2025-01-01", "tlač", "Grafon, s.r.o.", "", "2025-01-05", 10]]

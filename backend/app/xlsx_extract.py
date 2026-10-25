@@ -77,10 +77,12 @@ def _column_key(cell: object) -> str | None:
         return "kind"
     if "cislo" in folded and "kontrakt" not in folded:
         return "number"
-    if folded == "faktura":
+    if folded in {"faktura", "fa"}:
         return "invoice"
     if folded == "objednavka":
         return "order"
+    if folded == "plnenie":
+        return "proof"
     return None
 
 
@@ -96,8 +98,14 @@ def _record(row: tuple | list, columns: dict[str, int]) -> dict | None:
         return None
     issued = _issued(cell("issued"))
     description = _description(cell("number"), _format(issued) if issued else None, cell("supplier"), cell("subject")) or "doklad"
-    invoice = _text(cell("invoice")) or _text(cell("order"))
-    return {"description": description, "amount": amount, "issued": issued, "invoice": invoice}
+    return {
+        "description": description,
+        "amount": amount,
+        "issued": issued,
+        "invoice": _text(cell("invoice")),
+        "order": _text(cell("order")),
+        "proof": _text(cell("proof")),
+    }
 
 
 def _text(value: object) -> str | None:
@@ -166,6 +174,8 @@ def _draft(records: list[dict]) -> Draft:
             accept(record["amount"], 1),
             accept(record.get("invoice"), 1) if record.get("invoice") else empty(),
             accept(_file_id(record.get("invoice")), 1) if _file_id(record.get("invoice")) else empty(),
+            accept(record.get("order"), 1) if record.get("order") else empty(),
+            accept(record.get("proof"), 1) if record.get("proof") else empty(),
         )
         for record in records
         if record["description"] and record["amount"]

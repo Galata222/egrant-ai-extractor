@@ -238,6 +238,22 @@ def _line_tags(
                 threshold,
             )
         )
+    if line.order_file.value:
+        tags.append(
+            _tag(
+                {"tag": "doklad.objednavka", "label": "Objednávka", "required": False},
+                line.order_file,
+                threshold,
+            )
+        )
+    if line.proof_file.value:
+        tags.append(
+            _tag(
+                {"tag": "doklad.plnenie", "label": "Plnenie", "required": False},
+                line.proof_file,
+                threshold,
+            )
+        )
     return tags
 
 

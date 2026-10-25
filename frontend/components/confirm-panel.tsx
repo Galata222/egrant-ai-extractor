@@ -46,7 +46,18 @@ function isFileTag(
   tag: { tag: string; value: string | null },
   tags: Array<{ tag: string; value: string | null }>,
 ): boolean {
-  if (tag.tag === "doklad.faktura" || tag.tag === "doklad.subor_id" || tag.tag.endsWith(".subor_id")) return true;
+  if (
+    tag.tag === "doklad.faktura" ||
+    tag.tag === "doklad.objednavka" ||
+    tag.tag === "doklad.plnenie" ||
+    tag.tag === "doklad.subor_id" ||
+    tag.tag.endsWith(".faktura") ||
+    tag.tag.endsWith(".objednavka") ||
+    tag.tag.endsWith(".plnenie") ||
+    tag.tag.endsWith(".subor_id")
+  ) {
+    return true;
+  }
   if (tag.value?.includes("/file/")) return true;
   return Boolean(tag.value && /^\d+$/.test(tag.value) && tags.some((item) => item.value?.includes("/file/")));
 }
