@@ -4,11 +4,11 @@ Detachable module for the FUTURE MAKERS hackathon. A grant manager reviews one u
 
 The requirements live in [docs/SRS.md](docs/SRS.md). The JSON contract lives in [docs/egrant-fill.md](docs/egrant-fill.md).
 
-## Problem
+## Problem and use case
 
 Settlement of a grant means typing invoice, receipt, and contract details into a nested eGrant form. The person doing that work is a clerk, often reading Slovak documents, including a phone photo of a receipt. A wrong IČO, date, or amount can land in a legal settlement. An empty field that a person fills from the paper is a safe result. A guessed value is not.
 
-## Use case
+The prototype covers that review:
 
 1. Someone uploads a PDF, JPG, PNG, or XLSX, up to 10 MB. The screen shows the file and waits.
 2. They press **Pokračovať**. The service reads the file and returns an eGrant tag tree.
@@ -33,13 +33,13 @@ What reads the file:
 - A digital PDF uses its text layer. That read is exact and stays well under 15 seconds. Donut does not run, so a receipt model cannot replace a checked invoice value.
 - A photo or scan has no text layer. EasyOCR (`sk` + `en`) reads it. When PyTorch and Transformers are installed, Donut (`naver-clova-ix/donut-base-finetuned-cord-v2`) may fill a field the OCR read left empty, after the same validators. If the two reads disagree, the field stays `null`. Set `ENABLE_DONUT=false` to skip it. The Donut budget is `DONUT_BUDGET_SECONDS` (default 8), and the page stops at 15 seconds.
 - The organizer OCR image can fill a gap when `EGRANT_OCR_URL` is `http://127.0.0.1:9010/ocr-upload` (`trayvor/ocr-api-slk:v0.0.7`). This module does not send `force_ocr`. A value the text layer already accepted stays.
-- An XLSX settlement is read as a table, not as a photo.
+- An XLSX settlement is read as a table, not as a photo. Each row keeps its amount. The description joins the document number, issue date, supplier, and subject. A column named `Faktúra` or `Fa` is stored on `doklad.faktura`. `Objednávka` is stored on `doklad.objednavka` and is not used as the invoice. `Plnenie` is stored on `doklad.plnenie`, including several links in one cell. A path such as `/file/2457463` also stores the numeric id. A Dropbox link is stored as the link and does not invent that id.
 
 The review agent is a fixed sequence when `AGENT_API_KEY` is empty: list the empty required fields, ask for the first one, then wait. A typed value goes through the same validators as an extracted one. The person still presses confirm.
 
 Without a mapping, the tags come from [backend/app/mapping/tags.json](backend/app/mapping/tags.json). `POST /extract` accepts an optional `mapping` string when a real form export should replace those tags. The manager screen uses the built-in tags.
 
-## Startup procedure
+## How to run and test
 
 From the repository root, in two terminals. These steps are for Windows.
 
@@ -70,11 +70,13 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). In the header, **Ukážka** loads [backend/fixtures/sample-invoice.pdf](backend/fixtures/sample-invoice.pdf). **Pokračovať** starts the read. DIČ is missing on that invoice on purpose, so the VAT ID stays empty until a person fills it.
+Open [http://localhost:3000](http://localhost:3000). In the header, **Ukážka** loads [backend/fixtures/sample-invoice.pdf](backend/fixtures/sample-invoice.pdf). **Pokračovať** starts the read. DIČ is missing on that invoice on purpose, so the VAT ID stays empty until a person fills it. A typed VAT ID must be `SK` plus 10 digits before **Potvrdiť údaje** is enabled. After confirm, the heading is **Údaje sú pripravené pre eGrant**. The JSON is behind **Zobraziť technický zápis**.
+
+To test a settlement spreadsheet, upload an `.xlsx` whose columns include `Suma` and at least one of document number, supplier, or subject. Columns named `Fa`, `Objednávka`, and `Plnenie` appear as separate links on each row.
 
 The browser talks only to Next.js. [frontend/app/api/extract/route.ts](frontend/app/api/extract/route.ts) forwards `FormData` to FastAPI. Override the target with `API_URL` (see [frontend/.env.example](frontend/.env.example)).
 
-Tests:
+Automated tests:
 
 ```powershell
 cd backend
@@ -101,7 +103,7 @@ cd backend
 .\venv\Scripts\python.exe fixtures\build_sample.py
 ```
 
-## Technologies used
+## Technologies
 
 - Next.js 16, React 19, and Tailwind CSS 4 for the manager screen.
 - FastAPI and Pydantic for `POST /extract`, `POST /agent/start`, and `POST /agent/answer`.
@@ -150,6 +152,7 @@ Confirming in the iframe posts `{ type: "egrant:fill", payload }`. In production
 - Donut is a receipt model, not a model trained on Slovak invoices. It does not run on a digital PDF. On a photo it may leave a field empty when it disagrees with OCR or when its confidence is below `0.8`.
 - The organizer OCR container is a separate process. With `EGRANT_OCR_URL` unset, a photo uses EasyOCR and, when installed, Donut.
 - The manager screen always uses the sample tags in `tags.json`. A real form export is accepted only as the optional `mapping` field on `POST /extract`.
+- A settlement sheet’s other columns, such as `Účel`, `Prevodom`, `V hotovosti`, `Typ zdrojov`, and `Paid from account`, are not separate form fields. Document number, date, supplier, and subject are joined into the line description.
 - Review agent sessions live in the memory of the API process. A restart ends them, and only the 100 most recent sessions are kept. The form on screen still holds the values. More than one API process would need a shared store.
 - The first photo download of EasyOCR language data, and a first Donut run, are slower than the text layer. The text-layer budget remains 15 seconds.
 - There is no login. The prototype is meant to run beside eGrant, not as a public service.
